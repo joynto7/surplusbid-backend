@@ -1599,10 +1599,10 @@ export const createLotSchema = z.object({
   description: z.string().min(10),
   categoryId: z.string().uuid(),
   condition: z.string().min(2),
-  quantity: z.number().int().positive(),
-  startingPriceCents: z.number().int().positive(),
-  reservePriceCents: z.number().int().positive(),
-  bidIncrementCents: z.number().int().positive(),
+  quantity: z.coerce.number().int().positive(),
+  startingPriceCents: z.coerce.number().int().positive(),
+  reservePriceCents: z.coerce.number().int().positive(),
+  bidIncrementCents: z.coerce.number().int().positive(),
   startTime: z.string().datetime(),
   endTime: z.string().datetime(),
 }).refine((d) => new Date(d.endTime) > new Date(d.startTime), {
@@ -1612,6 +1612,8 @@ export const createLotSchema = z.object({
 
 export const updateLotSchema = createLotSchema.partial();
 ```
+
+(`z.coerce.number()` matters here specifically because lot creation is a `multipart/form-data` request — Step 6 below adds an image upload field, and every non-file field in a multipart body arrives as a string regardless of its logical type; plain `z.number()` would reject a well-formed request.)
 
 - [ ] **Step 4: Write `src/modules/lots/lots.service.ts`**
 
@@ -1636,9 +1638,9 @@ export async function getOwnedDraftOr404(lotId: string, sellerId: string) {
   return lot;
 }
 
-export function createLot(sellerId: string, data: Record<string, unknown>) {
+export function createLot(sellerId: string, data: Record<string, unknown>, images: string[]) {
   return prisma.lot.create({
-    data: { ...data, sellerId, images: [] } as never,
+    data: { ...data, sellerId, images } as never,
   });
 }
 
@@ -1673,7 +1675,9 @@ import { sendSuccess } from '../../utils/response';
 import { createLot, listMyLots, publishLot, softDeleteLot, updateDraftLot } from './lots.service';
 
 export const create = asyncHandler(async (req: Request, res: Response) => {
-  const lot = await createLot(req.user!.id, req.body);
+  const files = (req.files as (Express.Multer.File & { path: string })[] | undefined) ?? [];
+  const images = files.map((f) => f.path);
+  const lot = await createLot(req.user!.id, req.body, images);
   sendSuccess(res, 201, 'Lot created as draft', lot);
 });
 
@@ -1705,12 +1709,13 @@ import { Router } from 'express';
 import { authenticate } from '../../middleware/auth';
 import { requireRole } from '../../middleware/rbac';
 import { validate } from '../../middleware/validate';
+import { upload } from '../../middleware/upload';
 import { createLotSchema, updateLotSchema } from './lots.validation';
 import { create, myListings, publish, remove, update } from './lots.controller';
 
 const router = Router();
 
-router.post('/', authenticate, requireRole('SELLER'), validate(createLotSchema), create);
+router.post('/', authenticate, requireRole('SELLER'), upload.array('images', 5), validate(createLotSchema), create);
 router.get('/my-listings', authenticate, requireRole('SELLER'), myListings);
 router.patch('/:id', authenticate, requireRole('SELLER'), validate(updateLotSchema), update);
 router.delete('/:id', authenticate, requireRole('SELLER'), remove);
