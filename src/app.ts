@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { env } from './config/env';
+import { errorHandler } from './middleware/errorHandler';
 
 export const app = express();
 
@@ -16,5 +17,7 @@ app.use(
 app.get('/api/v1/health', (_req, res) => {
   res.json({ success: true, message: 'ok', data: { time: new Date().toISOString() } });
 });
+
+app.use(errorHandler);
 
 export default app;
