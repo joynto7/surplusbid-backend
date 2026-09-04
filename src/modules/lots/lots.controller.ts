@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { asyncHandler } from '../../utils/asyncHandler';
+import { ApiError } from '../../utils/ApiError';
 import { sendSuccess } from '../../utils/response';
 import { browseLotsSchema } from './lots.query';
 import { browseLots, createLot, getLotDetail, listMyLots, publishLot, softDeleteLot, updateDraftLot } from './lots.service';
@@ -32,8 +33,12 @@ export const myListings = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const browse = asyncHandler(async (req: Request, res: Response) => {
-  const query = browseLotsSchema.parse(req.query);
-  const result = await browseLots(query);
+  const parsed = browseLotsSchema.safeParse(req.query);
+  if (!parsed.success) {
+    const errors = parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`);
+    throw new ApiError(422, 'Validation failed', errors);
+  }
+  const result = await browseLots(parsed.data);
   sendSuccess(res, 200, 'Lots fetched', result);
 });
 

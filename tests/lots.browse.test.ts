@@ -1,7 +1,6 @@
 import request from 'supertest';
 import app from '../src/app';
 import { prisma } from '../src/config/prisma';
-import { redis } from '../src/config/redis';
 import { signAccessToken } from '../src/utils/jwt';
 
 let sellerId: string, categoryId: string, lotId: string;
@@ -27,7 +26,6 @@ afterAll(async () => {
   await prisma.lot.deleteMany({ where: { sellerId } });
   await prisma.category.delete({ where: { id: categoryId } });
   await prisma.user.delete({ where: { id: sellerId } });
-  await redis.quit();
   await prisma.$disconnect();
 });
 
