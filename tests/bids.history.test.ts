@@ -44,4 +44,37 @@ describe('Bid history', () => {
     expect(res.status).toBe(200);
     expect(res.body.data.items.some((b: { lotId: string }) => b.lotId === lotId)).toBe(true);
   });
+
+  it('does not expose buyerId on the public bid history endpoint', async () => {
+    const res = await request(app).get(`/api/v1/lots/${lotId}/bids`);
+    expect(res.status).toBe(200);
+    expect(res.body.data.items[0]).not.toHaveProperty('buyerId');
+  });
+
+  it('rejects invalid page/limit on the public bid history endpoint with 422', async () => {
+    const badPage = await request(app).get(`/api/v1/lots/${lotId}/bids`).query({ page: 'abc' });
+    expect(badPage.status).toBe(422);
+    expect(Array.isArray(badPage.body.errors)).toBe(true);
+    expect(badPage.body.errors.length).toBeGreaterThan(0);
+
+    const negativePage = await request(app).get(`/api/v1/lots/${lotId}/bids`).query({ page: -1 });
+    expect(negativePage.status).toBe(422);
+
+    const zeroLimit = await request(app).get(`/api/v1/lots/${lotId}/bids`).query({ limit: 0 });
+    expect(zeroLimit.status).toBe(422);
+  });
+
+  it('rejects invalid page/limit on my-bids with 422', async () => {
+    const badPage = await request(app)
+      .get('/api/v1/bids/my-bids')
+      .set('Authorization', `Bearer ${token}`)
+      .query({ page: 'abc' });
+    expect(badPage.status).toBe(422);
+
+    const zeroLimit = await request(app)
+      .get('/api/v1/bids/my-bids')
+      .set('Authorization', `Bearer ${token}`)
+      .query({ limit: 0 });
+    expect(zeroLimit.status).toBe(422);
+  });
 });

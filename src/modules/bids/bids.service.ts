@@ -115,7 +115,7 @@ export async function getBidHistory(lotId: string, page: number, limit: number) 
   const [items, total] = await Promise.all([
     prisma.bid.findMany({
       where: { lotId },
-      select: { id: true, buyerId: true, amountCents: true, status: true, createdAt: true },
+      select: { id: true, amountCents: true, status: true, createdAt: true },
       orderBy: { createdAt: 'desc' },
       skip: (page - 1) * limit,
       take: limit,
