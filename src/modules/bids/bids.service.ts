@@ -41,12 +41,28 @@ type LockedLot = {
   bidIncrementCents: number;
 };
 
+// A bid that cannot get the Lot row lock within LOCK_TIMEOUT_MS fails with
+// Postgres 55P03 (lock_not_available), which errorHandler maps to a retryable 503.
+// Without it, the lock wait silently eats the whole transaction budget and comes
+// back as an opaque P2028 — the exact scenario anti-sniping manufactures, with a
+// crowd of bidders queued on one hot lot in its closing seconds.
+// TRANSACTION_TIMEOUT_MS is deliberately well clear of LOCK_TIMEOUT_MS so that a
+// bid which waited nearly the full lock timeout still has budget left to commit.
+const LOCK_TIMEOUT_MS = 3000;
+const TRANSACTION_TIMEOUT_MS = 8000;
+
 export async function placeBid(lotId: string, buyerId: string, amountCents: number) {
   const hold = await getActiveHold(lotId, buyerId);
   if (!hold) throw new ApiError(403, 'You must authorize a deposit hold before bidding on this lot');
 
   return prisma.$transaction(
     async (tx) => {
+      // Bounds the FOR UPDATE wait below. Takes no locks and reads nothing, so the
+      // locked read below is still the first statement to touch contended state.
+      // $executeRawUnsafe because SET does not accept bind parameters; the value is a
+      // module constant, never caller input.
+      await tx.$executeRawUnsafe(`SET LOCAL lock_timeout = '${LOCK_TIMEOUT_MS}ms'`);
+
       // FIRST statement in the transaction: take the row lock before reading anything
       // else, so a concurrent bid on this lot blocks here and then re-reads the
       // committed highest bid instead of racing against a stale copy.
@@ -91,6 +107,6 @@ export async function placeBid(lotId: string, buyerId: string, amountCents: numb
       await redis.set(`lot:${lotId}:highestBid`, amountCents);
       return bid;
     },
-    { isolationLevel: 'ReadCommitted' }
+    { isolationLevel: 'ReadCommitted', timeout: TRANSACTION_TIMEOUT_MS }
   );
 }
