@@ -20,4 +20,7 @@ export const createLotSchema = lotBaseSchema.refine((d) => new Date(d.endTime) >
   path: ['endTime'],
 });
 
-export const updateLotSchema = lotBaseSchema.partial();
+export const updateLotSchema = lotBaseSchema.partial().refine(
+  (d) => !d.startTime || !d.endTime || new Date(d.endTime) > new Date(d.startTime),
+  { message: 'endTime must be after startTime', path: ['endTime'] }
+);

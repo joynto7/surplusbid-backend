@@ -50,6 +50,31 @@ describe('Lot CRUD', () => {
     lotId = res.body.data.id;
   });
 
+  it('rejects a PATCH that puts endTime before startTime', async () => {
+    const res = await request(app)
+      .patch(`/api/v1/lots/${lotId}`)
+      .set('Authorization', `Bearer ${sellerToken}`)
+      .send({
+        startTime: new Date(Date.now() + 3_600_000).toISOString(),
+        endTime: new Date(Date.now() + 60_000).toISOString(),
+      });
+    expect(res.status).toBe(422);
+  });
+
+  it('allows a PATCH touching only one of the time fields (or neither)', async () => {
+    const onlyTitle = await request(app)
+      .patch(`/api/v1/lots/${lotId}`)
+      .set('Authorization', `Bearer ${sellerToken}`)
+      .send({ title: 'Used Forklift (Updated)' });
+    expect(onlyTitle.status).toBe(200);
+
+    const onlyStartTime = await request(app)
+      .patch(`/api/v1/lots/${lotId}`)
+      .set('Authorization', `Bearer ${sellerToken}`)
+      .send({ startTime: new Date(Date.now() + 30_000).toISOString() });
+    expect(onlyStartTime.status).toBe(200);
+  });
+
   it('rejects a buyer trying to create a lot', async () => {
     const res = await request(app)
       .post('/api/v1/lots')
