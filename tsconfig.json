@@ -35,7 +35,7 @@
     // Recommended Options
     "strict": true,
     "jsx": "react-jsx",
-    "verbatimModuleSyntax": true,
+    "verbatimModuleSyntax": false,
     "isolatedModules": true,
     "noUncheckedSideEffectImports": true,
     "moduleDetection": "force",
@@ -43,5 +43,6 @@
 
     "esModuleInterop": true,
     "resolveJsonModule": true,
-  }
+  },
+  "include": ["src/**/*"]
 }

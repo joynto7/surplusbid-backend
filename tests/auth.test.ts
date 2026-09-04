@@ -47,4 +47,29 @@ describe('Auth', () => {
     });
     expect(res.status).toBe(401);
   });
+
+  it('refreshes an access token with a valid refresh token', async () => {
+    const loginRes = await request(app).post('/api/v1/auth/login').send({
+      email: 'newbuyer@test.com',
+      password: 'Passw0rd!',
+    });
+    const res = await request(app).post('/api/v1/auth/refresh-token').send({
+      refreshToken: loginRes.body.data.refreshToken,
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.data.accessToken).toBeDefined();
+  });
+
+  it('rejects refresh with an invalid refresh token', async () => {
+    const res = await request(app).post('/api/v1/auth/refresh-token').send({
+      refreshToken: 'garbage-token',
+    });
+    expect(res.status).toBe(401);
+  });
+
+  it('logs out successfully', async () => {
+    const res = await request(app).post('/api/v1/auth/logout').send({});
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+  });
 });

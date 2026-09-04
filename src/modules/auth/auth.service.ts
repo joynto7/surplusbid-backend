@@ -4,7 +4,7 @@ import { ApiError } from '../../utils/ApiError';
 import { signAccessToken, signRefreshToken } from '../../utils/jwt';
 
 export async function registerUser(input: { email: string; password: string; role: 'BUYER' | 'SELLER'; companyName: string }) {
-  const existing = await prisma.user.findUnique({ where: { email: input.email } });
+  const existing = await prisma.user.findFirst({ where: { email: input.email, deletedAt: null } });
   if (existing) throw new ApiError(409, 'Email already registered');
 
   const passwordHash = await bcrypt.hash(input.password, 10);
