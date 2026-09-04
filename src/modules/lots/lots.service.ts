@@ -1,5 +1,8 @@
 import { prisma } from '../../config/prisma';
+import { redis } from '../../config/redis';
 import { ApiError } from '../../utils/ApiError';
+import { browseLotsSchema } from './lots.query';
+import { z } from 'zod';
 
 const LOT_LIST_SELECT = {
   id: true, title: true, images: true, categoryId: true, status: true,
@@ -43,4 +46,44 @@ export async function publishLot(lotId: string, sellerId: string) {
 
 export function listMyLots(sellerId: string) {
   return prisma.lot.findMany({ where: { sellerId, deletedAt: null }, select: LOT_LIST_SELECT, orderBy: { createdAt: 'desc' } });
+}
+
+const PUBLIC_LOT_SELECT = {
+  id: true, title: true, description: true, images: true, condition: true, quantity: true,
+  categoryId: true, sellerId: true, status: true, startingPriceCents: true, bidIncrementCents: true,
+  currentHighestBidAmountCents: true, startTime: true, endTime: true, createdAt: true,
+} as const;
+
+export async function browseLots(query: z.infer<typeof browseLotsSchema>) {
+  const where = {
+    deletedAt: null,
+    ...(query.categoryId ? { categoryId: query.categoryId } : {}),
+    ...(query.status ? { status: query.status } : {}),
+    ...(query.q ? { title: { contains: query.q, mode: 'insensitive' as const } } : {}),
+  };
+
+  const [items, total] = await Promise.all([
+    prisma.lot.findMany({
+      where,
+      select: PUBLIC_LOT_SELECT,
+      orderBy: { [query.sortBy]: query.sortOrder },
+      skip: (query.page - 1) * query.limit,
+      take: query.limit,
+    }),
+    prisma.lot.count({ where }),
+  ]);
+
+  return { items, meta: { page: query.page, limit: query.limit, total, totalPages: Math.ceil(total / query.limit) } };
+}
+
+export async function getLotDetail(lotId: string, requesterId: string | undefined) {
+  const cacheKey = `lot:${lotId}:highestBid`;
+  const lot = await findLotById(lotId);
+
+  const cachedHighest = await redis.get(cacheKey);
+  const currentHighestBidAmountCents = cachedHighest !== null ? Number(cachedHighest) : lot.currentHighestBidAmountCents;
+
+  const { reservePriceCents, ...publicFields } = lot;
+  const isOwner = requesterId === lot.sellerId;
+  return { ...publicFields, currentHighestBidAmountCents, ...(isOwner ? { reservePriceCents } : {}) };
 }

@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import { asyncHandler } from '../../utils/asyncHandler';
 import { sendSuccess } from '../../utils/response';
-import { createLot, listMyLots, publishLot, softDeleteLot, updateDraftLot } from './lots.service';
+import { browseLotsSchema } from './lots.query';
+import { browseLots, createLot, getLotDetail, listMyLots, publishLot, softDeleteLot, updateDraftLot } from './lots.service';
 
 export const create = asyncHandler(async (req: Request, res: Response) => {
   const files = (req.files as (Express.Multer.File & { path: string })[] | undefined) ?? [];
@@ -28,4 +29,15 @@ export const publish = asyncHandler(async (req: Request, res: Response) => {
 export const myListings = asyncHandler(async (req: Request, res: Response) => {
   const lots = await listMyLots(req.user!.id);
   sendSuccess(res, 200, 'Your listings', lots);
+});
+
+export const browse = asyncHandler(async (req: Request, res: Response) => {
+  const query = browseLotsSchema.parse(req.query);
+  const result = await browseLots(query);
+  sendSuccess(res, 200, 'Lots fetched', result);
+});
+
+export const detail = asyncHandler(async (req: Request, res: Response) => {
+  const lot = await getLotDetail(req.params.id as string, req.user?.id);
+  sendSuccess(res, 200, 'Lot fetched', lot);
 });
