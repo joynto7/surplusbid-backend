@@ -8,7 +8,7 @@ import authRoutes from './modules/auth/auth.routes';
 import usersRoutes from './modules/users/users.routes';
 import categoriesRoutes from './modules/categories/categories.routes';
 import lotsRoutes from './modules/lots/lots.routes';
-import bidsRoutes from './modules/bids/bids.routes';
+import bidsRoutes, { myBidsRouter } from './modules/bids/bids.routes';
 import passport from './config/passport';
 
 export const app = express();
@@ -30,6 +30,7 @@ app.use('/api/v1/users', usersRoutes);
 app.use('/api/v1/categories', categoriesRoutes);
 app.use('/api/v1/lots', bidsRoutes);
 app.use('/api/v1/lots', lotsRoutes);
+app.use('/api/v1/bids', myBidsRouter);
 
 app.use(errorHandler);
 

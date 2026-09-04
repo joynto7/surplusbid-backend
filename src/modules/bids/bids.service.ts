@@ -110,3 +110,31 @@ export async function placeBid(lotId: string, buyerId: string, amountCents: numb
     { isolationLevel: 'ReadCommitted', timeout: TRANSACTION_TIMEOUT_MS }
   );
 }
+
+export async function getBidHistory(lotId: string, page: number, limit: number) {
+  const [items, total] = await Promise.all([
+    prisma.bid.findMany({
+      where: { lotId },
+      select: { id: true, buyerId: true, amountCents: true, status: true, createdAt: true },
+      orderBy: { createdAt: 'desc' },
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+    prisma.bid.count({ where: { lotId } }),
+  ]);
+  return { items, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+}
+
+export async function getMyBids(buyerId: string, page: number, limit: number) {
+  const [items, total] = await Promise.all([
+    prisma.bid.findMany({
+      where: { buyerId },
+      select: { id: true, lotId: true, amountCents: true, status: true, createdAt: true },
+      orderBy: { createdAt: 'desc' },
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+    prisma.bid.count({ where: { buyerId } }),
+  ]);
+  return { items, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+}
