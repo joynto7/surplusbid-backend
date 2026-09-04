@@ -10,12 +10,17 @@
     "dev": "ts-node-dev --respawn src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "test": "jest --runInBand"
+    "test": "jest --runInBand",
+    "postinstall": "prisma skills sync || exit 0",
+    "contract:emit": "prisma contract emit"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
+  },
   "dependencies": {
     "@prisma/client": "^7.10.0",
     "bcrypt": "^6.0.0",
@@ -40,6 +45,7 @@
     "testEnvironment": "node"
   },
   "devDependencies": {
+    "@prisma/orm-postgres": "^8.0.0-rc.8",
     "@types/bcrypt": "^6.0.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
@@ -52,7 +58,7 @@
     "@types/passport-google-oauth20": "^2.0.17",
     "@types/supertest": "^7.2.1",
     "jest": "^30.5.1",
-    "prisma": "^8.0.0-rc.12",
+    "prisma": "^5.22.0",
     "supertest": "^7.2.2",
     "ts-jest": "^29.4.12",
     "ts-node-dev": "^2.0.0",

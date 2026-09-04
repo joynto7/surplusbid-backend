@@ -1,0 +1,201 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  BUYER
+  SELLER
+  ADMIN
+}
+
+enum AuthProvider {
+  LOCAL
+  GOOGLE
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum LotStatus {
+  DRAFT
+  LIVE
+  ENDED
+  SOLD
+  UNSOLD
+  CANCELLED
+}
+
+enum BidStatus {
+  ACTIVE
+  OUTBID
+  WINNING
+}
+
+enum HoldStatus {
+  AUTHORIZED
+  CAPTURED
+  RELEASED
+  FAILED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+enum DisputeStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED
+  REJECTED
+}
+
+model User {
+  id                    String              @id @default(uuid())
+  email                 String              @unique
+  passwordHash          String?
+  authProvider          AuthProvider        @default(LOCAL)
+  googleId              String?             @unique
+  role                  Role
+  companyName           String
+  taxId                 String?
+  verificationStatus    VerificationStatus  @default(UNVERIFIED)
+  verificationDocUrl    String?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  deletedAt             DateTime?
+
+  lots               Lot[]         @relation("SellerLots")
+  bids               Bid[]
+  holds              DepositHold[]
+  payments           Payment[]
+  highestBidOnLots   Lot[]         @relation("CurrentHighestBidder")
+  disputesRaised     Dispute[]     @relation("DisputeRaisedBy")
+  disputesResolved   Dispute[]     @relation("DisputeResolvedBy")
+  auditLogs          AuditLog[]
+
+  @@index([email])
+}
+
+model Category {
+  id   String @id @default(uuid())
+  name String @unique
+  slug String @unique
+  lots Lot[]
+}
+
+model Lot {
+  id                          String    @id @default(uuid())
+  sellerId                    String
+  seller                      User      @relation("SellerLots", fields: [sellerId], references: [id])
+  categoryId                  String
+  category                    Category  @relation(fields: [categoryId], references: [id])
+  title                       String
+  description                 String
+  images                      String[]
+  condition                   String
+  quantity                    Int
+  startingPriceCents          Int
+  reservePriceCents           Int
+  bidIncrementCents           Int
+  startTime                   DateTime
+  endTime                     DateTime
+  status                      LotStatus @default(DRAFT)
+  currentHighestBidAmountCents Int?
+  currentHighestBidderId      String?
+  currentHighestBidder        User?     @relation("CurrentHighestBidder", fields: [currentHighestBidderId], references: [id])
+  createdAt                   DateTime  @default(now())
+  updatedAt                   DateTime  @updatedAt
+  deletedAt                   DateTime?
+
+  bids     Bid[]
+  holds    DepositHold[]
+  payments Payment[]
+  disputes Dispute[]
+
+  @@index([status, endTime])
+  @@index([categoryId, status])
+}
+
+model Bid {
+  id        String    @id @default(uuid())
+  lotId     String
+  lot       Lot       @relation(fields: [lotId], references: [id])
+  buyerId   String
+  buyer     User      @relation(fields: [buyerId], references: [id])
+  amountCents Int
+  status    BidStatus @default(ACTIVE)
+  createdAt DateTime  @default(now())
+
+  @@index([lotId, createdAt])
+}
+
+model DepositHold {
+  id                    String     @id @default(uuid())
+  lotId                 String
+  lot                   Lot        @relation(fields: [lotId], references: [id])
+  buyerId               String
+  buyer                 User       @relation(fields: [buyerId], references: [id])
+  stripePaymentIntentId String     @unique
+  amountCents           Int
+  status                HoldStatus @default(AUTHORIZED)
+  createdAt             DateTime   @default(now())
+
+  @@unique([lotId, buyerId])
+}
+
+model Payment {
+  id                    String        @id @default(uuid())
+  lotId                 String
+  lot                   Lot           @relation(fields: [lotId], references: [id])
+  buyerId               String
+  buyer                 User          @relation(fields: [buyerId], references: [id])
+  stripePaymentIntentId String?       @unique
+  amountCents           Int
+  status                PaymentStatus @default(PENDING)
+  dueAt                 DateTime
+  paidAt                DateTime?
+  createdAt             DateTime      @default(now())
+
+  @@index([status, dueAt])
+}
+
+model Dispute {
+  id             String        @id @default(uuid())
+  lotId          String
+  lot            Lot           @relation(fields: [lotId], references: [id])
+  raisedById     String
+  raisedBy       User          @relation("DisputeRaisedBy", fields: [raisedById], references: [id])
+  reason         String
+  description    String
+  status         DisputeStatus @default(OPEN)
+  resolutionNote String?
+  resolvedById   String?
+  resolvedBy     User?         @relation("DisputeResolvedBy", fields: [resolvedById], references: [id])
+  createdAt      DateTime      @default(now())
+  resolvedAt     DateTime?
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String?
+  actor      User?    @relation(fields: [actorId], references: [id])
+  action     String
+  entityType String
+  entityId   String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+}

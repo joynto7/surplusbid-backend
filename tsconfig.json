@@ -7,9 +7,11 @@
 
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
-    "module": "commonjs",
+    "module": "preserve",
     "target": "es2020",
-    "types": [],
+    "types": [
+      "node"
+    ],
     // For nodejs:
     // "lib": ["esnext"],
     // "types": ["node"],
@@ -43,5 +45,6 @@
 
     "esModuleInterop": true,
     "resolveJsonModule": true,
+    "moduleResolution": "bundler",
   }
 }
