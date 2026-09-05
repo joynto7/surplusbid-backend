@@ -30,3 +30,4 @@ services:
 databases:
   - name: surplusbid-db
     plan: free
+    ipAllowList: []
