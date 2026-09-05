@@ -1,0 +1,523 @@
+{
+  "info": {
+    "name": "SurplusBid",
+    "description": "SurplusBid backend API — one request per endpoint, organized by module. Run Auth > Login first to populate {{accessToken}} automatically for every other request.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": null,
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (pm.collectionVariables.get('accessToken')) {",
+          "  pm.request.headers.add({ key: 'Authorization', value: `Bearer ${pm.collectionVariables.get('accessToken')}` });",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:4000/api/v1" },
+    { "key": "accessToken", "value": "" },
+    { "key": "refreshToken", "value": "" },
+    { "key": "userId", "value": "" },
+    { "key": "targetUserId", "value": "", "description": "Another user's id, e.g. a pending seller — for admin verify" },
+    { "key": "categoryId", "value": "" },
+    { "key": "lotId", "value": "" },
+    { "key": "disputeId", "value": "" },
+    { "key": "paymentId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/health", "host": ["{{baseUrl}}"], "path": ["health"] }
+      }
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth", "register"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"buyer1@example.com\",\n  \"password\": \"Passw0rd!\",\n  \"role\": \"BUYER\",\n  \"companyName\": \"Acme Buying Co\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const data = pm.response.json().data;",
+                  "  pm.collectionVariables.set('accessToken', data.accessToken);",
+                  "  pm.collectionVariables.set('refreshToken', data.refreshToken);",
+                  "  pm.collectionVariables.set('userId', data.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"buyer1@example.com\",\n  \"password\": \"Passw0rd!\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json().data;",
+                  "pm.collectionVariables.set('accessToken', data.accessToken);",
+                  "pm.collectionVariables.set('refreshToken', data.refreshToken);",
+                  "pm.collectionVariables.set('userId', data.user.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/auth/refresh-token", "host": ["{{baseUrl}}"], "path": ["auth", "refresh-token"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json().data;",
+                  "if (data.accessToken) pm.collectionVariables.set('accessToken', data.accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/auth/logout", "host": ["{{baseUrl}}"], "path": ["auth", "logout"] }
+          }
+        },
+        {
+          "name": "Google Login",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/auth/google", "host": ["{{baseUrl}}"], "path": ["auth", "google"] },
+            "description": "Open in a browser, not from Postman's request runner — this redirects to Google's OAuth consent screen."
+          }
+        },
+        {
+          "name": "Google Callback",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/auth/google/callback", "host": ["{{baseUrl}}"], "path": ["auth", "google", "callback"] },
+            "description": "Invoked by Google's redirect after consent, not called directly."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Profile",
+      "item": [
+        {
+          "name": "Get Me",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/users/me", "host": ["{{baseUrl}}"], "path": ["users", "me"] }
+          }
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/users/me", "host": ["{{baseUrl}}"], "path": ["users", "me"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyName\": \"Acme Buying Co Updated\",\n  \"taxId\": \"12-3456789\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Submit Verification Document",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/users/verify", "host": ["{{baseUrl}}"], "path": ["users", "verify"] },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "document", "type": "file", "src": [] }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Categories",
+      "item": [
+        {
+          "name": "List Categories",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/categories", "host": ["{{baseUrl}}"], "path": ["categories"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const items = pm.response.json().data;",
+                  "if (Array.isArray(items) && items.length) pm.collectionVariables.set('categoryId', items[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Category (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/categories", "host": ["{{baseUrl}}"], "path": ["categories"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Industrial Equipment\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json().data;",
+                  "if (data && data.id) pm.collectionVariables.set('categoryId', data.id);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Lots",
+      "item": [
+        {
+          "name": "Create Lot (Seller)",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/lots", "host": ["{{baseUrl}}"], "path": ["lots"] },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "title", "value": "Surplus CNC Machine", "type": "text" },
+                { "key": "description", "value": "Lightly used 3-axis CNC mill, well maintained.", "type": "text" },
+                { "key": "categoryId", "value": "{{categoryId}}", "type": "text" },
+                { "key": "condition", "value": "Used", "type": "text" },
+                { "key": "quantity", "value": "1", "type": "text" },
+                { "key": "startingPriceCents", "value": "100000", "type": "text" },
+                { "key": "reservePriceCents", "value": "80000", "type": "text" },
+                { "key": "bidIncrementCents", "value": "5000", "type": "text" },
+                { "key": "startTime", "value": "2026-09-05T00:00:00.000Z", "type": "text" },
+                { "key": "endTime", "value": "2026-09-12T00:00:00.000Z", "type": "text" },
+                { "key": "images", "type": "file", "src": [] }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json().data;",
+                  "if (data && data.id) pm.collectionVariables.set('lotId', data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "My Listings (Seller)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/lots/my-listings",
+              "host": ["{{baseUrl}}"], "path": ["lots", "my-listings"]
+            }
+          }
+        },
+        {
+          "name": "Update Draft Lot (Seller)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/lots/{{lotId}}", "host": ["{{baseUrl}}"], "path": ["lots", "{{lotId}}"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservePriceCents\": 75000\n}"
+            }
+          }
+        },
+        {
+          "name": "Publish Lot (Seller)",
+          "request": {
+            "method": "PATCH",
+            "url": { "raw": "{{baseUrl}}/lots/{{lotId}}/publish", "host": ["{{baseUrl}}"], "path": ["lots", "{{lotId}}", "publish"] }
+          }
+        },
+        {
+          "name": "Delete Lot (Seller)",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/lots/{{lotId}}", "host": ["{{baseUrl}}"], "path": ["lots", "{{lotId}}"] }
+          }
+        },
+        {
+          "name": "Browse Lots (Public)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/lots?page=1&limit=10&sortBy=createdAt&sortOrder=desc",
+              "host": ["{{baseUrl}}"], "path": ["lots"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" },
+                { "key": "sortBy", "value": "createdAt" },
+                { "key": "sortOrder", "value": "desc" },
+                { "key": "categoryId", "value": "{{categoryId}}", "disabled": true },
+                { "key": "status", "value": "LIVE", "disabled": true },
+                { "key": "q", "value": "CNC", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Lot Detail (Public)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/lots/{{lotId}}", "host": ["{{baseUrl}}"], "path": ["lots", "{{lotId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Bidding",
+      "item": [
+        {
+          "name": "Authorize Deposit Hold",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/lots/{{lotId}}/deposit", "host": ["{{baseUrl}}"], "path": ["lots", "{{lotId}}", "deposit"] }
+          }
+        },
+        {
+          "name": "Place Bid",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/lots/{{lotId}}/bids", "host": ["{{baseUrl}}"], "path": ["lots", "{{lotId}}", "bids"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amountCents\": 105000\n}"
+            }
+          }
+        },
+        {
+          "name": "Bid History",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/lots/{{lotId}}/bids?page=1&limit=10",
+              "host": ["{{baseUrl}}"], "path": ["lots", "{{lotId}}", "bids"],
+              "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "10" }]
+            }
+          }
+        },
+        {
+          "name": "My Bids",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/bids/my-bids?page=1&limit=10",
+              "host": ["{{baseUrl}}"], "path": ["bids", "my-bids"],
+              "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "10" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payments",
+      "item": [
+        {
+          "name": "Initiate Final Payment",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/payments/initiate", "host": ["{{baseUrl}}"], "path": ["payments", "initiate"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paymentId\": \"{{paymentId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Stripe Webhook",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Stripe-Signature", "value": "t=0,v1=placeholder" }
+            ],
+            "url": { "raw": "{{baseUrl}}/payments/webhook", "host": ["{{baseUrl}}"], "path": ["payments", "webhook"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"evt_example\",\n  \"type\": \"payment_intent.succeeded\",\n  \"data\": { \"object\": { \"id\": \"pi_example\" } }\n}"
+            },
+            "description": "Sent by Stripe, not called manually — the raw body must be signed with your real Stripe signing secret to pass verification, so this request will 400 unless you replay an actual Stripe event (e.g. via the Stripe CLI: `stripe trigger payment_intent.succeeded`)."
+          }
+        },
+        {
+          "name": "My Payments",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/payments/my-payments?page=1&limit=10",
+              "host": ["{{baseUrl}}"], "path": ["payments", "my-payments"],
+              "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "10" }]
+            }
+          }
+        },
+        {
+          "name": "Get Payment By Id",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/payments/{{paymentId}}", "host": ["{{baseUrl}}"], "path": ["payments", "{{paymentId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Disputes",
+      "item": [
+        {
+          "name": "File Dispute",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/disputes", "host": ["{{baseUrl}}"], "path": ["disputes"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lotId\": \"{{lotId}}\",\n  \"reason\": \"Item not as described\",\n  \"description\": \"The equipment had undisclosed damage.\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json().data;",
+                  "if (data && data.id) pm.collectionVariables.set('disputeId', data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Resolve Dispute (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/disputes/{{disputeId}}/resolve", "host": ["{{baseUrl}}"], "path": ["disputes", "{{disputeId}}", "resolve"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"RESOLVED\",\n  \"resolutionNote\": \"Refund issued to buyer\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "List Users",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/admin/users?page=1&limit=10&verificationStatus=PENDING",
+              "host": ["{{baseUrl}}"], "path": ["admin", "users"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" },
+                { "key": "verificationStatus", "value": "PENDING" },
+                { "key": "role", "value": "SELLER", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Verify User",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/admin/users/{{targetUserId}}/verify", "host": ["{{baseUrl}}"], "path": ["admin", "users", "{{targetUserId}}", "verify"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"verificationStatus\": \"VERIFIED\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Dashboard Stats",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/admin/dashboard-stats", "host": ["{{baseUrl}}"], "path": ["admin", "dashboard-stats"] }
+          }
+        },
+        {
+          "name": "Audit Logs",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/admin/audit-logs?page=1&limit=10",
+              "host": ["{{baseUrl}}"], "path": ["admin", "audit-logs"],
+              "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "10" }]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
