@@ -2,6 +2,7 @@ import cron from 'node-cron';
 import { prisma } from '../config/prisma';
 import { stripe } from '../config/stripe';
 import { env } from '../config/env';
+import { sweepOverduePayments } from './settlePayments.job';
 
 type LockedLot = {
   id: string;
@@ -148,5 +149,8 @@ function isAlreadyCancelled(err: unknown) {
 export function startCronJobs() {
   cron.schedule('* * * * *', () => {
     closeLots().catch((err) => console.error('closeLots job failed:', err));
+  });
+  cron.schedule('* * * * *', () => {
+    sweepOverduePayments().catch((err) => console.error('sweepOverduePayments job failed:', err));
   });
 }

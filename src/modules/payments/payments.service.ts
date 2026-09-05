@@ -8,11 +8,32 @@ import { ApiError } from '../../utils/ApiError';
 // means the money was never taken, so capture it now; anything else (already
 // 'succeeded', etc.) means a prior attempt already finished — don't re-capture,
 // Stripe rejects a second capture on an already-captured intent.
-async function ensureDepositCaptured(stripePaymentIntentId: string) {
+export async function ensureDepositCaptured(stripePaymentIntentId: string) {
   const intent = await stripe.paymentIntents.retrieve(stripePaymentIntentId);
   if (intent.status === 'requires_capture') {
     await stripe.paymentIntents.capture(stripePaymentIntentId);
   }
+}
+
+// Shared by initiatePayment (normal balance-payment flow) and the payment-
+// deadline sweep (forfeiture flow, settlePayments.job.ts) — both need to turn
+// an AUTHORIZED deposit hold into a real Stripe capture exactly once. Claim
+// the hold row before calling Stripe so two concurrent callers (a retried
+// request, an overlapping cron tick) can't both call capture() on the same
+// PaymentIntent; the loser of the claim race falls back to checking Stripe
+// directly rather than assuming the winner's call actually completed.
+export async function captureDepositHold(hold: { id: string; status: string; stripePaymentIntentId: string }) {
+  if (hold.status === 'AUTHORIZED') {
+    const claimed = await prisma.depositHold.updateMany({ where: { id: hold.id, status: 'AUTHORIZED' }, data: { status: 'CAPTURED' } });
+    if (claimed.count > 0) {
+      await stripe.paymentIntents.capture(hold.stripePaymentIntentId);
+    } else {
+      await ensureDepositCaptured(hold.stripePaymentIntentId);
+    }
+  } else if (hold.status === 'CAPTURED') {
+    await ensureDepositCaptured(hold.stripePaymentIntentId);
+  }
+  // RELEASED/FAILED: nothing to capture — the hold was already let go.
 }
 
 export async function initiatePayment(paymentId: string, buyerId: string) {
@@ -35,34 +56,14 @@ export async function initiatePayment(paymentId: string, buyerId: string) {
   // rather than 404.
   const hold = await prisma.depositHold.findFirstOrThrow({ where: { lotId: payment.lotId, buyerId } });
 
-  if (hold.status === 'AUTHORIZED') {
-    // Claim the hold before talking to Stripe: a concurrent or retried /initiate
-    // call must not attempt to capture the same PaymentIntent twice (Stripe
-    // rejects a second capture on an already-captured intent). Mirrors
-    // releasePendingHolds in closeLots.job.ts. If we lose the claim race, another
-    // in-flight request already claimed it — verify with Stripe below rather than
-    // assuming that request's capture() call actually completed.
-    const claimed = await prisma.depositHold.updateMany({ where: { id: hold.id, status: 'AUTHORIZED' }, data: { status: 'CAPTURED' } });
-    if (claimed.count > 0) {
-      // This only finalizes the deposit (a small percentage of the lot price,
-      // already authorized back in Task 11) — it can never collect more than
-      // that intent's original amount.
-      await stripe.paymentIntents.capture(hold.stripePaymentIntentId);
-    } else {
-      await ensureDepositCaptured(hold.stripePaymentIntentId);
-    }
-  } else if (hold.status === 'CAPTURED') {
-    // Resume path: the DB's CAPTURED status only records that some attempt
-    // claimed the hold — never that its capture() call actually completed at
-    // Stripe (it may have thrown right after the claim: network blip, Stripe
-    // outage, expired auth). Never trust "CAPTURED" in the DB as proof the
-    // deposit was collected; confirm with Stripe directly before proceeding.
-    await ensureDepositCaptured(hold.stripePaymentIntentId);
-  } else {
+  if (hold.status !== 'AUTHORIZED' && hold.status !== 'CAPTURED') {
     // RELEASED/FAILED: the deposit was never actually captured, so there's
     // nothing to build the balance charge on top of.
     throw new ApiError(409, 'This payment has already been processed');
   }
+  // Claim-then-verify: see captureDepositHold's own comment for why a claim
+  // race or a resumed CAPTURED row is never trusted blindly.
+  await captureDepositHold(hold);
 
   // The remaining balance (winning bid minus deposit, computed by the settlement
   // job in closeLots.job.ts) is a separate charge with no saved payment method to
