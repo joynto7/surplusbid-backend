@@ -11,6 +11,7 @@ import lotsRoutes from './modules/lots/lots.routes';
 import bidsRoutes, { myBidsRouter } from './modules/bids/bids.routes';
 import paymentsRoutes from './modules/payments/payments.routes';
 import disputesRoutes from './modules/disputes/disputes.routes';
+import adminRoutes from './modules/admin/admin.routes';
 import passport from './config/passport';
 
 export const app = express();
@@ -39,6 +40,7 @@ app.use('/api/v1/lots', lotsRoutes);
 app.use('/api/v1/bids', myBidsRouter);
 app.use('/api/v1/payments', paymentsRoutes);
 app.use('/api/v1/disputes', disputesRoutes);
+app.use('/api/v1/admin', adminRoutes);
 
 app.use(errorHandler);
 
