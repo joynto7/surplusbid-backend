@@ -3,7 +3,13 @@ import { ApiError } from '../../utils/ApiError';
 import { findLotById } from '../lots/lots.service';
 
 export async function createDispute(raisedById: string, data: { lotId: string; reason: string; description: string }) {
-  await findLotById(data.lotId);
+  const lot = await findLotById(data.lotId);
+  const isSeller = lot.sellerId === raisedById;
+  const isWinningBidder = isSeller
+    ? false
+    : Boolean(await prisma.bid.findFirst({ where: { lotId: data.lotId, buyerId: raisedById, status: 'WINNING' } }));
+  if (!isSeller && !isWinningBidder) throw new ApiError(403, 'You are not a party to this lot');
+
   return prisma.dispute.create({ data: { ...data, raisedById } });
 }
 
