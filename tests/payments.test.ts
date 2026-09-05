@@ -5,7 +5,10 @@ import { signAccessToken } from '../src/utils/jwt';
 
 jest.mock('../src/config/stripe', () => ({
   stripe: {
-    paymentIntents: { capture: jest.fn().mockResolvedValue({ id: 'pi_winner', status: 'succeeded' }) },
+    paymentIntents: {
+      capture: jest.fn().mockResolvedValue({ id: 'pi_winner', status: 'succeeded' }),
+      create: jest.fn().mockResolvedValue({ id: 'pi_remaining_balance', client_secret: 'secret_remaining_balance' }),
+    },
     webhooks: { constructEvent: jest.fn() },
   },
 }));
@@ -47,19 +50,51 @@ afterAll(async () => {
 });
 
 describe('Final payment', () => {
-  it('initiates payment by capturing the deposit hold and returns it as PENDING', async () => {
+  it('initiates payment: captures the deposit hold and creates a new PaymentIntent for the remaining balance', async () => {
     const res = await request(app)
       .post('/api/v1/payments/initiate')
       .set('Authorization', `Bearer ${token}`)
       .send({ paymentId });
     expect(res.status).toBe(200);
+    // The deposit hold's own PaymentIntent is captured (finalizes the deposit only)...
     expect(stripe.paymentIntents.capture).toHaveBeenCalledWith('pi_winner');
+    // ...but the remaining balance is a SEPARATE, newly-created PaymentIntent.
+    expect(stripe.paymentIntents.create).toHaveBeenCalledWith(
+      expect.objectContaining({ amount: 110000, currency: 'usd' })
+    );
+    expect(res.body.data.stripePaymentIntentId).toBe('pi_remaining_balance');
+    expect(res.body.data.clientSecret).toBe('secret_remaining_balance');
+
+    const hold = await prisma.depositHold.findFirstOrThrow({ where: { lotId, buyerId } });
+    expect(hold.status).toBe('CAPTURED');
   });
 
-  it('marks the payment SUCCEEDED when the webhook reports success', async () => {
+  it('rejects a retried /initiate call once the deposit hold is already captured', async () => {
+    // The hold is no longer AUTHORIZED (captured by the previous test), so there is
+    // nothing left to claim or capture again — no second Stripe capture is attempted.
+    const res = await request(app)
+      .post('/api/v1/payments/initiate')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ paymentId });
+    expect(res.status).toBe(404);
+    expect(stripe.paymentIntents.capture).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not mark the payment SUCCEEDED when the webhook amount does not match the owed amount', async () => {
     (stripe.webhooks.constructEvent as jest.Mock).mockReturnValue({
       type: 'payment_intent.succeeded',
-      data: { object: { id: 'pi_winner' } },
+      data: { object: { id: 'pi_remaining_balance', amount: 1, currency: 'usd' } },
+    });
+    const res = await request(app).post('/api/v1/payments/webhook').set('stripe-signature', 'test-sig').send({});
+    expect(res.status).toBe(200);
+    const payment = await prisma.payment.findUniqueOrThrow({ where: { id: paymentId } });
+    expect(payment.status).toBe('PENDING');
+  });
+
+  it('marks the payment SUCCEEDED when the webhook reports success for the matching amount', async () => {
+    (stripe.webhooks.constructEvent as jest.Mock).mockReturnValue({
+      type: 'payment_intent.succeeded',
+      data: { object: { id: 'pi_remaining_balance', amount: 110000, currency: 'usd' } },
     });
     const res = await request(app).post('/api/v1/payments/webhook').set('stripe-signature', 'test-sig').send({});
     expect(res.status).toBe(200);
@@ -67,9 +102,35 @@ describe('Final payment', () => {
     expect(payment.status).toBe('SUCCEEDED');
   });
 
+  it('ignores a redelivered webhook event for an already-settled payment', async () => {
+    (stripe.webhooks.constructEvent as jest.Mock).mockReturnValue({
+      type: 'payment_intent.payment_failed',
+      data: { object: { id: 'pi_remaining_balance', amount: 110000, currency: 'usd' } },
+    });
+    const res = await request(app).post('/api/v1/payments/webhook').set('stripe-signature', 'test-sig').send({});
+    expect(res.status).toBe(200);
+    const payment = await prisma.payment.findUniqueOrThrow({ where: { id: paymentId } });
+    expect(payment.status).toBe('SUCCEEDED');
+  });
+
+  it('rejects an invalid webhook signature', async () => {
+    (stripe.webhooks.constructEvent as jest.Mock).mockImplementation(() => {
+      throw new Error('invalid signature');
+    });
+    const res = await request(app).post('/api/v1/payments/webhook').set('stripe-signature', 'bad-sig').send({});
+    expect(res.status).toBe(400);
+  });
+
   it("returns the buyer's own payments", async () => {
     const res = await request(app).get('/api/v1/payments/my-payments').set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(200);
     expect(res.body.data.items.some((p: { id: string }) => p.id === paymentId)).toBe(true);
+  });
+
+  it('rejects an invalid pagination limit with 422', async () => {
+    const res = await request(app)
+      .get('/api/v1/payments/my-payments?limit=999')
+      .set('Authorization', `Bearer ${token}`);
+    expect(res.status).toBe(422);
   });
 });

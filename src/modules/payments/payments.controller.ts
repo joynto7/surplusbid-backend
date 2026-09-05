@@ -5,7 +5,8 @@ import { sendSuccess } from '../../utils/response';
 import { stripe } from '../../config/stripe';
 import { env } from '../../config/env';
 import { ApiError } from '../../utils/ApiError';
-import { getMyPayments, getPaymentById, handleWebhookEvent, initiatePayment } from './payments.service';
+import { getMyPayments, getPaymentById, handleWebhookEvent, initiatePayment, PaymentIntentWebhookEvent } from './payments.service';
+import { paginationQuerySchema } from './payments.query';
 
 export const initiate = asyncHandler(async (req: Request, res: Response) => {
   const payment = await initiatePayment(req.body.paymentId, req.user!.id);
@@ -16,13 +17,11 @@ export const webhook = asyncHandler(async (req: Request, res: Response) => {
   const signature = req.headers['stripe-signature'];
   let event: Stripe.Event;
   try {
-    event = env.nodeEnv === 'test'
-      ? (stripe.webhooks.constructEvent(req.body, signature as string, '') as unknown as Stripe.Event)
-      : stripe.webhooks.constructEvent(req.body, signature as string, env.stripeWebhookSecret);
+    event = stripe.webhooks.constructEvent(req.body, signature as string, env.stripeWebhookSecret);
   } catch {
     throw new ApiError(400, 'Invalid webhook signature');
   }
-  await handleWebhookEvent(event as never);
+  await handleWebhookEvent(event as unknown as PaymentIntentWebhookEvent);
   res.json({ received: true });
 });
 
@@ -32,8 +31,11 @@ export const getById = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const myPayments = asyncHandler(async (req: Request, res: Response) => {
-  const page = Number(req.query.page ?? 1);
-  const limit = Number(req.query.limit ?? 10);
-  const result = await getMyPayments(req.user!.id, page, limit);
+  const parsed = paginationQuerySchema.safeParse(req.query);
+  if (!parsed.success) {
+    const errors = parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`);
+    throw new ApiError(422, 'Validation failed', errors);
+  }
+  const result = await getMyPayments(req.user!.id, parsed.data.page, parsed.data.limit);
   sendSuccess(res, 200, 'Your payments fetched', result);
 });

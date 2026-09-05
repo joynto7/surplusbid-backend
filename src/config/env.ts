@@ -17,7 +17,7 @@ export const env = {
   jwtRefreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? '7d',
   redisUrl: process.env.REDIS_URL ?? 'redis://localhost:6379',
   stripeSecretKey: process.env.STRIPE_SECRET_KEY ?? '',
-  stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? '',
+  stripeWebhookSecret: required('STRIPE_WEBHOOK_SECRET'),
   cloudinary: {
     cloudName: process.env.CLOUDINARY_CLOUD_NAME ?? '',
     apiKey: process.env.CLOUDINARY_API_KEY ?? '',
