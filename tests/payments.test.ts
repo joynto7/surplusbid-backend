@@ -8,7 +8,7 @@ jest.mock('../src/config/stripe', () => ({
     paymentIntents: {
       capture: jest.fn().mockResolvedValue({ id: 'pi_winner', status: 'succeeded' }),
       create: jest.fn().mockResolvedValue({ id: 'pi_remaining_balance', client_secret: 'secret_remaining_balance' }),
-      retrieve: jest.fn().mockResolvedValue({ id: 'pi_remaining_balance', client_secret: 'secret_remaining_balance' }),
+      retrieve: jest.fn().mockResolvedValue({ id: 'pi_remaining_balance', client_secret: 'secret_remaining_balance', status: 'succeeded' }),
     },
     webhooks: { constructEvent: jest.fn() },
   },
@@ -129,6 +129,62 @@ describe('Final payment', () => {
     await prisma.payment.delete({ where: { id: payment2.id } });
     await prisma.depositHold.deleteMany({ where: { lotId: lot2.id } });
     await prisma.lot.delete({ where: { id: lot2.id } });
+  });
+
+  it('re-captures on retry when a prior capture() call rejected after the DB claim, instead of silently skipping it', async () => {
+    // Simulates: /initiate claims the hold (DB -> CAPTURED) but the actual
+    // stripe.paymentIntents.capture() call rejects (network blip, Stripe outage,
+    // expired auth) before it resolves. The deposit was NEVER actually taken at
+    // Stripe even though the DB now says CAPTURED.
+    const lot3 = await prisma.lot.create({
+      data: {
+        sellerId, categoryId, title: 'Payment Flaky-Capture Lot', description: 'For capture-failure retry testing',
+        condition: 'Used', quantity: 1, startingPriceCents: 100000, reservePriceCents: 80000, bidIncrementCents: 5000,
+        startTime: new Date(), endTime: new Date(Date.now() - 1000), status: 'SOLD', currentHighestBidderId: buyerId,
+      },
+    });
+    await prisma.depositHold.create({
+      data: { lotId: lot3.id, buyerId, amountCents: 10000, stripePaymentIntentId: 'pi_flaky', status: 'AUTHORIZED' },
+    });
+    const payment3 = await prisma.payment.create({
+      data: { lotId: lot3.id, buyerId, amountCents: 42000, status: 'PENDING', dueAt: new Date(Date.now() + 3_600_000) },
+    });
+
+    (stripe.paymentIntents.capture as jest.Mock).mockRejectedValueOnce(new Error('stripe unavailable'));
+    const res1 = await request(app)
+      .post('/api/v1/payments/initiate')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ paymentId: payment3.id });
+    expect(res1.status).toBe(500);
+
+    // The claim went through even though the capture never completed — the
+    // exact "DB says CAPTURED, Stripe never actually took the money" state.
+    const holdAfterFailure = await prisma.depositHold.findFirstOrThrow({ where: { lotId: lot3.id, buyerId } });
+    expect(holdAfterFailure.status).toBe('CAPTURED');
+    const captureCallsAfterFirstAttempt = (stripe.paymentIntents.capture as jest.Mock).mock.calls.length;
+
+    // Retry: Stripe's own PaymentIntent is still requires_capture (the failed
+    // attempt never got through) — the fix must notice this and capture again,
+    // not trust the DB's CAPTURED status and silently skip straight to the
+    // balance charge.
+    (stripe.paymentIntents.retrieve as jest.Mock).mockResolvedValueOnce({ id: 'pi_flaky', status: 'requires_capture' });
+    (stripe.paymentIntents.create as jest.Mock).mockResolvedValueOnce({ id: 'pi_flaky_balance', client_secret: 'secret_flaky_balance' });
+
+    const res2 = await request(app)
+      .post('/api/v1/payments/initiate')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ paymentId: payment3.id });
+
+    expect(res2.status).toBe(200);
+    // The deposit was actually captured this time, on retry.
+    expect((stripe.paymentIntents.capture as jest.Mock).mock.calls.length).toBe(captureCallsAfterFirstAttempt + 1);
+    expect(stripe.paymentIntents.capture).toHaveBeenLastCalledWith('pi_flaky');
+    expect(res2.body.data.stripePaymentIntentId).toBe('pi_flaky_balance');
+    expect(res2.body.data.clientSecret).toBe('secret_flaky_balance');
+
+    await prisma.payment.delete({ where: { id: payment3.id } });
+    await prisma.depositHold.deleteMany({ where: { lotId: lot3.id } });
+    await prisma.lot.delete({ where: { id: lot3.id } });
   });
 
   it('rejects /initiate with a missing/malformed paymentId with 422 before touching Stripe', async () => {

@@ -2,6 +2,19 @@ import { prisma } from '../../config/prisma';
 import { stripe } from '../../config/stripe';
 import { ApiError } from '../../utils/ApiError';
 
+// DB "CAPTURED" only means someone claimed the hold, not that Stripe actually
+// collected it (the capture() call after the claim may have thrown). Stripe's
+// own PaymentIntent status is the real source of truth: 'requires_capture'
+// means the money was never taken, so capture it now; anything else (already
+// 'succeeded', etc.) means a prior attempt already finished — don't re-capture,
+// Stripe rejects a second capture on an already-captured intent.
+async function ensureDepositCaptured(stripePaymentIntentId: string) {
+  const intent = await stripe.paymentIntents.retrieve(stripePaymentIntentId);
+  if (intent.status === 'requires_capture') {
+    await stripe.paymentIntents.capture(stripePaymentIntentId);
+  }
+}
+
 export async function initiatePayment(paymentId: string, buyerId: string) {
   const payment = await prisma.payment.findFirst({ where: { id: paymentId, buyerId } });
   if (!payment) throw new ApiError(404, 'Payment not found');
@@ -27,16 +40,25 @@ export async function initiatePayment(paymentId: string, buyerId: string) {
     // call must not attempt to capture the same PaymentIntent twice (Stripe
     // rejects a second capture on an already-captured intent). Mirrors
     // releasePendingHolds in closeLots.job.ts. If we lose the claim race, another
-    // in-flight request already captured it — fall through to creating (or, via
-    // the idempotency key below, de-duping) the balance PaymentIntent.
+    // in-flight request already claimed it — verify with Stripe below rather than
+    // assuming that request's capture() call actually completed.
     const claimed = await prisma.depositHold.updateMany({ where: { id: hold.id, status: 'AUTHORIZED' }, data: { status: 'CAPTURED' } });
     if (claimed.count > 0) {
       // This only finalizes the deposit (a small percentage of the lot price,
       // already authorized back in Task 11) — it can never collect more than
       // that intent's original amount.
       await stripe.paymentIntents.capture(hold.stripePaymentIntentId);
+    } else {
+      await ensureDepositCaptured(hold.stripePaymentIntentId);
     }
-  } else if (hold.status !== 'CAPTURED') {
+  } else if (hold.status === 'CAPTURED') {
+    // Resume path: the DB's CAPTURED status only records that some attempt
+    // claimed the hold — never that its capture() call actually completed at
+    // Stripe (it may have thrown right after the claim: network blip, Stripe
+    // outage, expired auth). Never trust "CAPTURED" in the DB as proof the
+    // deposit was collected; confirm with Stripe directly before proceeding.
+    await ensureDepositCaptured(hold.stripePaymentIntentId);
+  } else {
     // RELEASED/FAILED: the deposit was never actually captured, so there's
     // nothing to build the balance charge on top of.
     throw new ApiError(409, 'This payment has already been processed');
