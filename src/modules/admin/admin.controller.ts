@@ -11,7 +11,7 @@ export const users = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const verify = asyncHandler(async (req: Request, res: Response) => {
-  const user = await verifyUser(req.params.id, req.user!.id, req.body.verificationStatus);
+  const user = await verifyUser(req.params.id as string, req.user!.id, req.body.verificationStatus);
   sendSuccess(res, 200, 'User verification updated', user);
 });
 
