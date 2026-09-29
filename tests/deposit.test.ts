@@ -5,8 +5,14 @@ import { signAccessToken } from '../src/utils/jwt';
 import { stripe } from '../src/config/stripe';
 
 jest.mock('../src/config/stripe', () => ({
-  stripe: { paymentIntents: { create: jest.fn().mockResolvedValue({ id: 'pi_test_123', client_secret: 'secret_123' }) } },
+  stripe: {
+    paymentIntents: {
+      create: jest.fn().mockResolvedValue({ id: 'pi_test_123', client_secret: 'secret_123' }),
+      retrieve: jest.fn().mockResolvedValue({ id: 'pi_test_123', status: 'requires_payment_method', client_secret: 'secret_123' }),
+    },
+  },
 }));
+const retrieveMock = stripe.paymentIntents.retrieve as unknown as jest.Mock;
 
 let buyerId: string, sellerId: string, categoryId: string, lotId: string, buyerToken: string;
 
@@ -29,6 +35,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  await prisma.bid.deleteMany({ where: { lotId } });
   await prisma.depositHold.deleteMany({ where: { lotId } });
   await prisma.lot.deleteMany({ where: { sellerId } });
   await prisma.category.delete({ where: { id: categoryId } });
@@ -44,12 +51,41 @@ describe('Deposit hold', () => {
     expect(res.status).toBe(201);
     expect(res.body.data.amountCents).toBe(20000);
     expect(res.body.data.status).toBe('AUTHORIZED');
+    expect(res.body.data.clientSecret).toBe('secret_123');
     expect(stripe.paymentIntents.create).toHaveBeenCalledWith(
       expect.objectContaining({ amount: 20000, currency: 'usd', capture_method: 'manual' })
     );
   });
 
-  it('rejects a second deposit request for the same lot/buyer pair', async () => {
+  it('returns the same clientSecret again while the card is still unconfirmed', async () => {
+    const res = await request(app)
+      .post(`/api/v1/lots/${lotId}/deposit`)
+      .set('Authorization', `Bearer ${buyerToken}`);
+    expect(res.status).toBe(201);
+    expect(res.body.data.clientSecret).toBe('secret_123');
+    expect(stripe.paymentIntents.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('refuses bids until Stripe reports the hold as authorized', async () => {
+    const res = await request(app)
+      .post(`/api/v1/lots/${lotId}/bids`)
+      .set('Authorization', `Bearer ${buyerToken}`)
+      .send({ amountCents: 205000 });
+    expect(res.status).toBe(403);
+    expect(res.body.message).toMatch(/deposit hold/i);
+  });
+
+  it('accepts bids once the hold is confirmed', async () => {
+    retrieveMock.mockResolvedValueOnce({ id: 'pi_test_123', status: 'requires_capture' });
+    const res = await request(app)
+      .post(`/api/v1/lots/${lotId}/bids`)
+      .set('Authorization', `Bearer ${buyerToken}`)
+      .send({ amountCents: 205000 });
+    expect(res.status).toBe(201);
+  });
+
+  it('rejects a second deposit request once the hold is confirmed', async () => {
+    retrieveMock.mockResolvedValueOnce({ id: 'pi_test_123', status: 'requires_capture' });
     const res = await request(app)
       .post(`/api/v1/lots/${lotId}/deposit`)
       .set('Authorization', `Bearer ${buyerToken}`);

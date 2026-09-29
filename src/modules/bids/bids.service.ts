@@ -9,12 +9,41 @@ export async function getActiveHold(lotId: string, buyerId: string) {
   return prisma.depositHold.findFirst({ where: { lotId, buyerId, status: 'AUTHORIZED' } });
 }
 
+// Stripe statuses that mean the buyer's card really is authorized for the hold.
+// A freshly created manual-capture intent sits in 'requires_payment_method'
+// until the buyer confirms it client-side with the returned clientSecret.
+const CONFIRMED_HOLD_STATUSES = new Set(['requires_capture', 'processing', 'succeeded']);
+const AWAITING_CARD_STATUSES = new Set(['requires_payment_method', 'requires_confirmation', 'requires_action']);
+const HOLD_CONFIRMED_TTL_S = 7 * 24 * 60 * 60;
+
+/**
+ * True once Stripe reports the hold's card authorization. Cached in Redis so
+ * only the first bid per hold pays for the Stripe round-trip.
+ */
+export async function isHoldConfirmed(hold: { id: string; stripePaymentIntentId: string }) {
+  const key = `hold:${hold.id}:confirmed`;
+  if (await redis.get(key)) return true;
+  const intent = await stripe.paymentIntents.retrieve(hold.stripePaymentIntentId);
+  if (!CONFIRMED_HOLD_STATUSES.has(intent.status)) return false;
+  await redis.set(key, '1', 'EX', HOLD_CONFIRMED_TTL_S);
+  return true;
+}
+
 export async function createDepositHold(lotId: string, buyerId: string) {
   const lot = await findLotById(lotId);
   if (lot.status !== 'LIVE') throw new ApiError(409, 'This lot is not open for bidding');
 
   const existing = await prisma.depositHold.findUnique({ where: { lotId_buyerId: { lotId, buyerId } } });
-  if (existing) throw new ApiError(409, 'A deposit hold already exists for this lot');
+  if (existing) {
+    // The buyer started a hold but never confirmed the card (closed the dialog,
+    // 3-D Secure abandoned…): hand back the same intent so they can finish it
+    // instead of being locked out by the unique (lotId, buyerId) constraint.
+    if (existing.status === 'AUTHORIZED') {
+      const intent = await stripe.paymentIntents.retrieve(existing.stripePaymentIntentId);
+      if (AWAITING_CARD_STATUSES.has(intent.status)) return { ...existing, clientSecret: intent.client_secret };
+    }
+    throw new ApiError(409, 'A deposit hold already exists for this lot');
+  }
 
   const amountCents = Math.round(lot.startingPriceCents * (env.depositPercent / 100));
   const intent = await stripe.paymentIntents.create({
@@ -24,9 +53,11 @@ export async function createDepositHold(lotId: string, buyerId: string) {
     metadata: { lotId, buyerId },
   });
 
-  return prisma.depositHold.create({
+  const hold = await prisma.depositHold.create({
     data: { lotId, buyerId, amountCents, stripePaymentIntentId: intent.id, status: 'AUTHORIZED' },
   });
+  // The client confirms the card authorization with this secret (Stripe Payment Element).
+  return { ...hold, clientSecret: intent.client_secret };
 }
 
 const ANTI_SNIPE_WINDOW_MS = 2 * 60 * 1000;
@@ -54,6 +85,11 @@ const TRANSACTION_TIMEOUT_MS = 8000;
 export async function placeBid(lotId: string, buyerId: string, amountCents: number) {
   const hold = await getActiveHold(lotId, buyerId);
   if (!hold) throw new ApiError(403, 'You must authorize a deposit hold before bidding on this lot');
+  // Without this, an unconfirmed hold would let the buyer bid and later make
+  // the deposit capture at checkout fail (Stripe can't capture an intent with no card).
+  if (!(await isHoldConfirmed(hold))) {
+    throw new ApiError(403, 'Confirm your card for the deposit hold before bidding on this lot');
+  }
 
   return prisma.$transaction(
     async (tx) => {

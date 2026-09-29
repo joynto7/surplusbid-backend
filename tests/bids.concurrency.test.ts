@@ -6,7 +6,11 @@ import { signAccessToken } from '../src/utils/jwt';
 jest.mock('../src/config/stripe', () => ({
   // one intent id per call: stripePaymentIntentId is @unique, so a fixed
   // mockResolvedValue would make the second buyer's deposit hold collide.
-  stripe: { paymentIntents: { create: jest.fn(async () => ({ id: `pi_${Math.random()}` })) } },
+  stripe: { paymentIntents: {
+    create: jest.fn(async () => ({ id: `pi_${Math.random()}` })),
+    // Holds count as card-confirmed so these tests exercise bidding, not deposits.
+    retrieve: jest.fn(async () => ({ status: 'requires_capture' })),
+  } },
 }));
 
 let buyerAId: string, buyerBId: string, sellerId: string, categoryId: string, lotId: string;

@@ -5,7 +5,11 @@ import { prisma } from '../src/config/prisma';
 import { signAccessToken } from '../src/utils/jwt';
 
 jest.mock('../src/config/stripe', () => ({
-  stripe: { paymentIntents: { create: jest.fn(async () => ({ id: `pi_${Math.random()}` })) } },
+  stripe: { paymentIntents: {
+    create: jest.fn(async () => ({ id: `pi_${Math.random()}` })),
+    // Holds count as card-confirmed so these tests exercise bidding, not deposits.
+    retrieve: jest.fn(async () => ({ status: 'requires_capture' })),
+  } },
 }));
 
 // Own client, own connection pool: this is what makes the competing lock real
