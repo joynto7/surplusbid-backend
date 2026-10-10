@@ -41,7 +41,9 @@
   "jest": {
     "preset": "ts-jest",
     "testEnvironment": "node",
-    "setupFilesAfterEnv": ["<rootDir>/tests/setupRedisTeardown.ts"]
+    "setupFilesAfterEnv": [
+      "<rootDir>/tests/setupRedisTeardown.ts"
+    ]
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
@@ -61,5 +63,11 @@
     "ts-jest": "^29.4.12",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.9.3"
+  },
+  "allowScripts": {
+    "bcrypt@6.0.0": true,
+    "@prisma/client@5.22.0": true,
+    "@prisma/engines@5.22.0": true,
+    "prisma@5.22.0": true
   }
 }
