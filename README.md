@@ -112,7 +112,7 @@ never committed here.
 
 ## Links
 
-- Live API: https://surplusbid-api.onrender.com
+- Live API: https://surplusbid-backend-1.onrender.com/api/v1
 - API docs (Postman): https://documenter.getpostman.com/view/56417304/2sBYAxPUve
 - Demo video: `<video URL>`
 
@@ -125,4 +125,4 @@ Import both files from `docs/` into Postman:
   in once.
 - `SurplusBid.postman_environment.json` — sets `baseUrl`; point it at
   `http://localhost:4000/api/v1` for local testing or
-  `https://surplusbid-api.onrender.com/api/v1` for the live deployment.
+  `https://surplusbid-backend-1.onrender.com/api/v1` for the live deployment.
