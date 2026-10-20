@@ -115,7 +115,12 @@ async function rolloverLot(lotId: string, forfeitedBuyerId: string) {
       await tx.bid.update({ where: { id: nextBid.id }, data: { status: 'WINNING' } });
       await tx.lot.update({
         where: { id: lotId },
-        data: { currentHighestBidAmountCents: nextBid.amountCents, currentHighestBidderId: nextBid.buyerId, status: 'SOLD' },
+        data: {
+          currentHighestBidAmountCents: nextBid.amountCents,
+          currentPriceCents: nextBid.amountCents,
+          currentHighestBidderId: nextBid.buyerId,
+          status: 'SOLD',
+        },
       });
 
       const nextHold = await tx.depositHold.findFirst({

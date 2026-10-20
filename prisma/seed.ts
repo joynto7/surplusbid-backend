@@ -209,6 +209,8 @@ async function seedCatalogue(users: Map<string, string>, categories: Map<string,
         endTime: end,
         status: lot.status,
         currentHighestBidAmountCents: highest,
+        // Set explicitly too: databases synced with `prisma db push` have no price trigger.
+        currentPriceCents: highest ?? lot.startingPrice * 100,
         currentHighestBidderId: highestBidder,
         createdAt,
       },

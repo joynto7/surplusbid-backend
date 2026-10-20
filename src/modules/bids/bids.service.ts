@@ -129,6 +129,7 @@ export async function placeBid(lotId: string, buyerId: string, amountCents: numb
         where: { id: lotId },
         data: {
           currentHighestBidAmountCents: amountCents,
+          currentPriceCents: amountCents,
           currentHighestBidderId: buyerId,
           endTime: extendEndTime,
         },

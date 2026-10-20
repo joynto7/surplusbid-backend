@@ -25,16 +25,20 @@ export async function getOwnedDraftOr404(lotId: string, sellerId: string) {
   return lot;
 }
 
+// currentPriceCents is written by the app as well as by the lot_current_price trigger, so it
+// stays right on databases whose schema was synced with `prisma db push` (no trigger).
 export function createLot(sellerId: string, data: Record<string, unknown>, images: string[]) {
   return prisma.lot.create({
-    data: { ...data, sellerId, images } as never,
+    data: { ...data, sellerId, images, currentPriceCents: data.startingPriceCents } as never,
   });
 }
 
 export async function updateDraftLot(lotId: string, sellerId: string, data: Record<string, unknown>) {
   const lot = await getOwnedDraftOr404(lotId, sellerId);
   if (lot.status !== 'DRAFT') throw new ApiError(409, 'Only draft lots can be edited');
-  return prisma.lot.update({ where: { id: lotId }, data: data as never });
+  // Drafts have no bids, so the current price is the starting price.
+  const price = typeof data.startingPriceCents === 'number' ? { currentPriceCents: data.startingPriceCents } : {};
+  return prisma.lot.update({ where: { id: lotId }, data: { ...data, ...price } as never });
 }
 
 export async function softDeleteLot(lotId: string, sellerId: string) {
