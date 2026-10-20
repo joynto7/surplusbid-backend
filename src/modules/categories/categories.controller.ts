@@ -9,6 +9,6 @@ export const list = asyncHandler(async (_req: Request, res: Response) => {
 });
 
 export const create = asyncHandler(async (req: Request, res: Response) => {
-  const category = await createCategory(req.body.name);
+  const category = await createCategory(req.body);
   sendSuccess(res, 201, 'Category created', category);
 });

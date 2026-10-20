@@ -10,7 +10,9 @@
     "dev": "ts-node-dev --respawn src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "test": "jest --runInBand"
+    "test": "jest --runInBand",
+    "seed": "prisma db seed",
+    "seed:reset": "SEED_RESET=true prisma db seed"
   },
   "keywords": [],
   "author": "",
@@ -20,6 +22,7 @@
     "seed": "ts-node prisma/seed.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.135.0",
     "@prisma/client": "5.22.0",
     "bcrypt": "^6.0.0",
     "cloudinary": "^1.41.3",

@@ -72,6 +72,11 @@ model User {
   taxId                 String?
   verificationStatus    VerificationStatus  @default(UNVERIFIED)
   verificationDocUrl    String?
+  // Editable public profile (shown on lot pages and in the seller directory).
+  contactName           String?
+  phone                 String?
+  location              String?
+  bio                   String?
   createdAt             DateTime            @default(now())
   updatedAt             DateTime            @updatedAt
   deletedAt             DateTime?
@@ -84,15 +89,20 @@ model User {
   disputesRaised     Dispute[]     @relation("DisputeRaisedBy")
   disputesResolved   Dispute[]     @relation("DisputeResolvedBy")
   auditLogs          AuditLog[]
+  reviewsWritten     Review[]      @relation("ReviewAuthor")
+  reviewsReceived    Review[]      @relation("ReviewSeller")
+  lotViews           LotView[]
 
   @@index([email])
 }
 
 model Category {
-  id   String @id @default(uuid())
-  name String @unique
-  slug String @unique
-  lots Lot[]
+  id          String  @id @default(uuid())
+  name        String  @unique
+  slug        String  @unique
+  description String?
+  imageUrl    String?
+  lots        Lot[]
 }
 
 model Lot {
@@ -115,6 +125,15 @@ model Lot {
   currentHighestBidAmountCents Int?
   currentHighestBidderId      String?
   currentHighestBidder        User?     @relation("CurrentHighestBidder", fields: [currentHighestBidderId], references: [id])
+  // Pickup location, e.g. "Houston, TX". Filterable on the explore page.
+  location                    String    @default("")
+  // Key specifications as [{ "label": "Brand", "value": "Haas" }, ...].
+  specs                       Json      @default("[]")
+  viewCount                   Int       @default(0)
+  // COALESCE(currentHighestBidAmountCents, startingPriceCents), kept in sync by
+  // the lot_current_price trigger (see the migration) so price filters and
+  // price sorting work on what a buyer actually pays now.
+  currentPriceCents           Int       @default(0)
   createdAt                   DateTime  @default(now())
   updatedAt                   DateTime  @updatedAt
   deletedAt                   DateTime?
@@ -123,9 +142,12 @@ model Lot {
   holds    DepositHold[]
   payments Payment[]
   disputes Dispute[]
+  reviews  Review[]
+  views    LotView[]
 
   @@index([status, endTime])
   @@index([categoryId, status])
+  @@index([status, currentPriceCents])
 }
 
 model Bid {
@@ -198,4 +220,59 @@ model AuditLog {
   createdAt  DateTime @default(now())
 
   @@index([entityType, entityId])
+}
+
+// A winning buyer's review of the seller, tied to the lot they bought.
+model Review {
+  id        String   @id @default(uuid())
+  lotId     String
+  lot       Lot      @relation(fields: [lotId], references: [id])
+  sellerId  String
+  seller    User     @relation("ReviewSeller", fields: [sellerId], references: [id])
+  authorId  String
+  author    User     @relation("ReviewAuthor", fields: [authorId], references: [id])
+  rating    Int
+  title     String
+  comment   String
+  createdAt DateTime @default(now())
+
+  @@unique([lotId, authorId])
+  @@index([sellerId, createdAt])
+}
+
+// One row per (deduplicated) lot page view. Feeds trending, recommendations and seller analytics.
+model LotView {
+  id        String   @id @default(uuid())
+  lotId     String
+  lot       Lot      @relation(fields: [lotId], references: [id])
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@index([lotId, createdAt])
+  @@index([createdAt])
+}
+
+enum MessageStatus {
+  NEW
+  READ
+  ARCHIVED
+}
+
+model ContactMessage {
+  id        String        @id @default(uuid())
+  name      String
+  email     String
+  topic     String
+  message   String
+  status    MessageStatus @default(NEW)
+  createdAt DateTime      @default(now())
+
+  @@index([status, createdAt])
+}
+
+model NewsletterSubscriber {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
 }

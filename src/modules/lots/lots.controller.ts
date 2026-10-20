@@ -1,9 +1,20 @@
 import { Request, Response } from 'express';
+import { callerKey } from '../../middleware/keyRateLimit';
 import { asyncHandler } from '../../utils/asyncHandler';
-import { ApiError } from '../../utils/ApiError';
+import { parseOr422 } from '../../utils/parseOr422';
 import { sendSuccess } from '../../utils/response';
-import { browseLotsSchema } from './lots.query';
-import { browseLots, createLot, getLotDetail, listMyLots, publishLot, softDeleteLot, updateDraftLot } from './lots.service';
+import { browseLotsSchema, recordViewSchema, relatedLotsSchema } from './lots.query';
+import {
+  browseLots,
+  createLot,
+  getLotDetail,
+  getRelatedLots,
+  listMyLots,
+  publishLot,
+  recordLotView,
+  softDeleteLot,
+  updateDraftLot,
+} from './lots.service';
 
 export const create = asyncHandler(async (req: Request, res: Response) => {
   const files = (req.files as (Express.Multer.File & { path: string })[] | undefined) ?? [];
@@ -33,16 +44,28 @@ export const myListings = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const browse = asyncHandler(async (req: Request, res: Response) => {
-  const parsed = browseLotsSchema.safeParse(req.query);
-  if (!parsed.success) {
-    const errors = parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`);
-    throw new ApiError(422, 'Validation failed', errors);
-  }
-  const result = await browseLots(parsed.data);
+  const query = parseOr422(browseLotsSchema, req.query);
+  const result = await browseLots(query, req.user?.role);
   sendSuccess(res, 200, 'Lots fetched', result);
 });
 
 export const detail = asyncHandler(async (req: Request, res: Response) => {
   const lot = await getLotDetail(req.params.id as string, req.user?.id);
   sendSuccess(res, 200, 'Lot fetched', lot);
+});
+
+export const related = asyncHandler(async (req: Request, res: Response) => {
+  const { limit } = parseOr422(relatedLotsSchema, req.query);
+  const lots = await getRelatedLots(req.params.id as string, limit);
+  sendSuccess(res, 200, 'Related lots fetched', lots);
+});
+
+export const view = asyncHandler(async (req: Request, res: Response) => {
+  const { viewerId } = parseOr422(recordViewSchema, req.body ?? {});
+  const result = await recordLotView(req.params.id as string, {
+    ...(req.user?.id ? { userId: req.user.id } : {}),
+    ...(viewerId ? { viewerId } : {}),
+    fallback: callerKey(req),
+  });
+  sendSuccess(res, 200, result.counted ? 'View recorded' : 'View already counted', result);
 });

@@ -1,5 +1,20 @@
 import { z } from 'zod';
 
+const specSchema = z.object({
+  label: z.string().trim().min(1).max(40),
+  value: z.string().trim().min(1).max(120),
+});
+
+// Multipart create requests send specs as a JSON string; JSON PATCH requests send an array.
+const specsSchema = z.preprocess((v) => {
+  if (typeof v !== 'string') return v;
+  try {
+    return JSON.parse(v);
+  } catch {
+    return v;
+  }
+}, z.array(specSchema).max(12));
+
 const lotBaseSchema = z.object({
   title: z.string().min(3),
   description: z.string().min(10),
@@ -11,6 +26,8 @@ const lotBaseSchema = z.object({
   bidIncrementCents: z.coerce.number().int().positive(),
   startTime: z.string().datetime(),
   endTime: z.string().datetime(),
+  location: z.string().trim().max(80).optional(),
+  specs: specsSchema.optional(),
 });
 
 // Zod v4 forbids .partial() on a refined schema, so the base object is

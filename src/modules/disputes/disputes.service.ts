@@ -28,3 +28,46 @@ export async function resolveDispute(disputeId: string, resolvedById: string, da
 
   return updated;
 }
+
+const DISPUTE_SELECT = {
+  id: true, lotId: true, raisedById: true, reason: true, description: true, status: true, resolutionNote: true,
+  resolvedById: true, createdAt: true, resolvedAt: true,
+  lot: { select: { id: true, title: true, images: true, sellerId: true, seller: { select: { companyName: true } } } },
+  raisedBy: { select: { id: true, companyName: true, email: true, role: true } },
+} as const;
+
+/** Disputes the user raised, or that concern lots they sell. */
+export async function listMyDisputes(userId: string, page: number, limit: number) {
+  const where = { OR: [{ raisedById: userId }, { lot: { sellerId: userId } }] };
+  const [items, total] = await Promise.all([
+    prisma.dispute.findMany({ where, select: DISPUTE_SELECT, orderBy: { createdAt: 'desc' }, skip: (page - 1) * limit, take: limit }),
+    prisma.dispute.count({ where }),
+  ]);
+  return { items, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+}
+
+export async function listAllDisputes(page: number, limit: number, status?: string, q?: string) {
+  const where = {
+    ...(status ? { status: status as never } : {}),
+    ...(q
+      ? {
+          OR: [
+            { reason: { contains: q, mode: 'insensitive' as const } },
+            { description: { contains: q, mode: 'insensitive' as const } },
+            { lot: { title: { contains: q, mode: 'insensitive' as const } } },
+            { raisedBy: { companyName: { contains: q, mode: 'insensitive' as const } } },
+          ],
+        }
+      : {}),
+  };
+  const [items, total, counts] = await Promise.all([
+    prisma.dispute.findMany({ where, select: DISPUTE_SELECT, orderBy: { createdAt: 'desc' }, skip: (page - 1) * limit, take: limit }),
+    prisma.dispute.count({ where }),
+    prisma.dispute.groupBy({ by: ['status'], _count: { _all: true } }),
+  ]);
+  return {
+    items,
+    meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    counts: Object.fromEntries(counts.map((c) => [c.status, c._count._all])),
+  };
+}

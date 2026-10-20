@@ -19,22 +19,70 @@
     }
   ],
   "variable": [
-    { "key": "baseUrl", "value": "http://localhost:4000/api/v1" },
-    { "key": "accessToken", "value": "" },
-    { "key": "refreshToken", "value": "" },
-    { "key": "userId", "value": "" },
-    { "key": "targetUserId", "value": "", "description": "Another user's id, e.g. a pending seller — for admin verify" },
-    { "key": "categoryId", "value": "" },
-    { "key": "lotId", "value": "" },
-    { "key": "disputeId", "value": "" },
-    { "key": "paymentId", "value": "" }
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:4000/api/v1"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "refreshToken",
+      "value": ""
+    },
+    {
+      "key": "userId",
+      "value": ""
+    },
+    {
+      "key": "targetUserId",
+      "value": "",
+      "description": "Another user's id, e.g. a pending seller — for admin verify"
+    },
+    {
+      "key": "categoryId",
+      "value": ""
+    },
+    {
+      "key": "lotId",
+      "value": ""
+    },
+    {
+      "key": "disputeId",
+      "value": ""
+    },
+    {
+      "key": "paymentId",
+      "value": ""
+    },
+    {
+      "key": "messageId",
+      "value": ""
+    },
+    {
+      "key": "reviewId",
+      "value": ""
+    },
+    {
+      "key": "sellerId",
+      "value": ""
+    }
   ],
   "item": [
     {
       "name": "Health",
       "request": {
         "method": "GET",
-        "url": { "raw": "{{baseUrl}}/health", "host": ["{{baseUrl}}"], "path": ["health"] }
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "health"
+          ]
+        }
       }
     },
     {
@@ -44,8 +92,22 @@
           "name": "Register",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "url": { "raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth", "register"] },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"buyer1@example.com\",\n  \"password\": \"Passw0rd!\",\n  \"role\": \"BUYER\",\n  \"companyName\": \"Acme Buying Co\"\n}"
@@ -72,8 +134,22 @@
           "name": "Login",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"buyer1@example.com\",\n  \"password\": \"Passw0rd!\"\n}"
@@ -98,8 +174,22 @@
           "name": "Refresh Token",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "url": { "raw": "{{baseUrl}}/auth/refresh-token", "host": ["{{baseUrl}}"], "path": ["auth", "refresh-token"] },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/refresh-token",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "refresh-token"
+              ]
+            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
@@ -122,14 +212,32 @@
           "name": "Logout",
           "request": {
             "method": "POST",
-            "url": { "raw": "{{baseUrl}}/auth/logout", "host": ["{{baseUrl}}"], "path": ["auth", "logout"] }
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "logout"
+              ]
+            }
           }
         },
         {
           "name": "Google Login",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/auth/google", "host": ["{{baseUrl}}"], "path": ["auth", "google"] },
+            "url": {
+              "raw": "{{baseUrl}}/auth/google",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "google"
+              ]
+            },
             "description": "Open in a browser, not from Postman's request runner — this redirects to Google's OAuth consent screen."
           }
         },
@@ -137,7 +245,17 @@
           "name": "Google Callback",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/auth/google/callback", "host": ["{{baseUrl}}"], "path": ["auth", "google", "callback"] },
+            "url": {
+              "raw": "{{baseUrl}}/auth/google/callback",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "google",
+                "callback"
+              ]
+            },
             "description": "Invoked by Google's redirect after consent, not called directly."
           }
         }
@@ -150,15 +268,38 @@
           "name": "Get Me",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/users/me", "host": ["{{baseUrl}}"], "path": ["users", "me"] }
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me"
+              ]
+            }
           }
         },
         {
           "name": "Update Profile",
           "request": {
             "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "url": { "raw": "{{baseUrl}}/users/me", "host": ["{{baseUrl}}"], "path": ["users", "me"] },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me"
+              ]
+            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"companyName\": \"Acme Buying Co Updated\",\n  \"taxId\": \"12-3456789\"\n}"
@@ -169,11 +310,24 @@
           "name": "Submit Verification Document",
           "request": {
             "method": "POST",
-            "url": { "raw": "{{baseUrl}}/users/verify", "host": ["{{baseUrl}}"], "path": ["users", "verify"] },
+            "url": {
+              "raw": "{{baseUrl}}/users/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "verify"
+              ]
+            },
             "body": {
               "mode": "formdata",
               "formdata": [
-                { "key": "document", "type": "file", "src": [] }
+                {
+                  "key": "document",
+                  "type": "file",
+                  "src": []
+                }
               ]
             }
           }
@@ -187,7 +341,15 @@
           "name": "List Categories",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/categories", "host": ["{{baseUrl}}"], "path": ["categories"] }
+            "url": {
+              "raw": "{{baseUrl}}/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categories"
+              ]
+            }
           },
           "event": [
             {
@@ -206,8 +368,21 @@
           "name": "Create Category (Admin)",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "url": { "raw": "{{baseUrl}}/categories", "host": ["{{baseUrl}}"], "path": ["categories"] },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categories"
+              ]
+            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"Industrial Equipment\"\n}"
@@ -235,21 +410,73 @@
           "name": "Create Lot (Seller)",
           "request": {
             "method": "POST",
-            "url": { "raw": "{{baseUrl}}/lots", "host": ["{{baseUrl}}"], "path": ["lots"] },
+            "url": {
+              "raw": "{{baseUrl}}/lots",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "lots"
+              ]
+            },
             "body": {
               "mode": "formdata",
               "formdata": [
-                { "key": "title", "value": "Surplus CNC Machine", "type": "text" },
-                { "key": "description", "value": "Lightly used 3-axis CNC mill, well maintained.", "type": "text" },
-                { "key": "categoryId", "value": "{{categoryId}}", "type": "text" },
-                { "key": "condition", "value": "Used", "type": "text" },
-                { "key": "quantity", "value": "1", "type": "text" },
-                { "key": "startingPriceCents", "value": "100000", "type": "text" },
-                { "key": "reservePriceCents", "value": "80000", "type": "text" },
-                { "key": "bidIncrementCents", "value": "5000", "type": "text" },
-                { "key": "startTime", "value": "2026-09-05T00:00:00.000Z", "type": "text" },
-                { "key": "endTime", "value": "2026-09-12T00:00:00.000Z", "type": "text" },
-                { "key": "images", "type": "file", "src": [] }
+                {
+                  "key": "title",
+                  "value": "Surplus CNC Machine",
+                  "type": "text"
+                },
+                {
+                  "key": "description",
+                  "value": "Lightly used 3-axis CNC mill, well maintained.",
+                  "type": "text"
+                },
+                {
+                  "key": "categoryId",
+                  "value": "{{categoryId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "condition",
+                  "value": "Used",
+                  "type": "text"
+                },
+                {
+                  "key": "quantity",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "startingPriceCents",
+                  "value": "100000",
+                  "type": "text"
+                },
+                {
+                  "key": "reservePriceCents",
+                  "value": "80000",
+                  "type": "text"
+                },
+                {
+                  "key": "bidIncrementCents",
+                  "value": "5000",
+                  "type": "text"
+                },
+                {
+                  "key": "startTime",
+                  "value": "2026-09-05T00:00:00.000Z",
+                  "type": "text"
+                },
+                {
+                  "key": "endTime",
+                  "value": "2026-09-12T00:00:00.000Z",
+                  "type": "text"
+                },
+                {
+                  "key": "images",
+                  "type": "file",
+                  "src": []
+                }
               ]
             }
           },
@@ -272,7 +499,13 @@
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/lots/my-listings",
-              "host": ["{{baseUrl}}"], "path": ["lots", "my-listings"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "lots",
+                "my-listings"
+              ]
             }
           }
         },
@@ -280,8 +513,22 @@
           "name": "Update Draft Lot (Seller)",
           "request": {
             "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "url": { "raw": "{{baseUrl}}/lots/{{lotId}}", "host": ["{{baseUrl}}"], "path": ["lots", "{{lotId}}"] },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/lots/{{lotId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "lots",
+                "{{lotId}}"
+              ]
+            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"reservePriceCents\": 75000\n}"
@@ -292,14 +539,33 @@
           "name": "Publish Lot (Seller)",
           "request": {
             "method": "PATCH",
-            "url": { "raw": "{{baseUrl}}/lots/{{lotId}}/publish", "host": ["{{baseUrl}}"], "path": ["lots", "{{lotId}}", "publish"] }
+            "url": {
+              "raw": "{{baseUrl}}/lots/{{lotId}}/publish",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "lots",
+                "{{lotId}}",
+                "publish"
+              ]
+            }
           }
         },
         {
           "name": "Delete Lot (Seller)",
           "request": {
             "method": "DELETE",
-            "url": { "raw": "{{baseUrl}}/lots/{{lotId}}", "host": ["{{baseUrl}}"], "path": ["lots", "{{lotId}}"] }
+            "url": {
+              "raw": "{{baseUrl}}/lots/{{lotId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "lots",
+                "{{lotId}}"
+              ]
+            }
           }
         },
         {
@@ -308,15 +574,44 @@
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/lots?page=1&limit=10&sortBy=createdAt&sortOrder=desc",
-              "host": ["{{baseUrl}}"], "path": ["lots"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "lots"
+              ],
               "query": [
-                { "key": "page", "value": "1" },
-                { "key": "limit", "value": "10" },
-                { "key": "sortBy", "value": "createdAt" },
-                { "key": "sortOrder", "value": "desc" },
-                { "key": "categoryId", "value": "{{categoryId}}", "disabled": true },
-                { "key": "status", "value": "LIVE", "disabled": true },
-                { "key": "q", "value": "CNC", "disabled": true }
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt"
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc"
+                },
+                {
+                  "key": "categoryId",
+                  "value": "{{categoryId}}",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "LIVE",
+                  "disabled": true
+                },
+                {
+                  "key": "q",
+                  "value": "CNC",
+                  "disabled": true
+                }
               ]
             }
           }
@@ -325,7 +620,124 @@
           "name": "Lot Detail (Public)",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/lots/{{lotId}}", "host": ["{{baseUrl}}"], "path": ["lots", "{{lotId}}"] }
+            "url": {
+              "raw": "{{baseUrl}}/lots/{{lotId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "lots",
+                "{{lotId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Browse Lots with Filters (Public)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/lots?q=forklift&minPriceCents=500000&maxPriceCents=3000000&location=TX&condition=Used&sortBy=currentPriceCents&sortOrder=asc&page=1&limit=12",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "lots"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "forklift"
+                },
+                {
+                  "key": "minPriceCents",
+                  "value": "500000"
+                },
+                {
+                  "key": "maxPriceCents",
+                  "value": "3000000"
+                },
+                {
+                  "key": "location",
+                  "value": "TX"
+                },
+                {
+                  "key": "condition",
+                  "value": "Used"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "currentPriceCents"
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "asc"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "12"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Related Lots (Public)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/lots/{{lotId}}/related?limit=4",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "lots",
+                "{{lotId}}",
+                "related"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "4"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Record Lot View (Public)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/lots/{{lotId}}/view",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "lots",
+                "{{lotId}}",
+                "view"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"viewerId\": \"postman-visitor\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           }
         }
       ]
@@ -337,15 +749,40 @@
           "name": "Authorize Deposit Hold",
           "request": {
             "method": "POST",
-            "url": { "raw": "{{baseUrl}}/lots/{{lotId}}/deposit", "host": ["{{baseUrl}}"], "path": ["lots", "{{lotId}}", "deposit"] }
+            "url": {
+              "raw": "{{baseUrl}}/lots/{{lotId}}/deposit",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "lots",
+                "{{lotId}}",
+                "deposit"
+              ]
+            }
           }
         },
         {
           "name": "Place Bid",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "url": { "raw": "{{baseUrl}}/lots/{{lotId}}/bids", "host": ["{{baseUrl}}"], "path": ["lots", "{{lotId}}", "bids"] },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/lots/{{lotId}}/bids",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "lots",
+                "{{lotId}}",
+                "bids"
+              ]
+            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"amountCents\": 105000\n}"
@@ -358,8 +795,24 @@
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/lots/{{lotId}}/bids?page=1&limit=10",
-              "host": ["{{baseUrl}}"], "path": ["lots", "{{lotId}}", "bids"],
-              "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "10" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "lots",
+                "{{lotId}}",
+                "bids"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
             }
           }
         },
@@ -369,8 +822,23 @@
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/bids/my-bids?page=1&limit=10",
-              "host": ["{{baseUrl}}"], "path": ["bids", "my-bids"],
-              "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "10" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bids",
+                "my-bids"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
             }
           }
         }
@@ -383,8 +851,22 @@
           "name": "Initiate Final Payment",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "url": { "raw": "{{baseUrl}}/payments/initiate", "host": ["{{baseUrl}}"], "path": ["payments", "initiate"] },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payments/initiate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "initiate"
+              ]
+            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"paymentId\": \"{{paymentId}}\"\n}"
@@ -396,10 +878,25 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Stripe-Signature", "value": "t=0,v1=placeholder" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Stripe-Signature",
+                "value": "t=0,v1=placeholder"
+              }
             ],
-            "url": { "raw": "{{baseUrl}}/payments/webhook", "host": ["{{baseUrl}}"], "path": ["payments", "webhook"] },
+            "url": {
+              "raw": "{{baseUrl}}/payments/webhook",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "webhook"
+              ]
+            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"id\": \"evt_example\",\n  \"type\": \"payment_intent.succeeded\",\n  \"data\": { \"object\": { \"id\": \"pi_example\" } }\n}"
@@ -413,8 +910,23 @@
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/payments/my-payments?page=1&limit=10",
-              "host": ["{{baseUrl}}"], "path": ["payments", "my-payments"],
-              "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "10" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "my-payments"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
             }
           }
         },
@@ -422,7 +934,16 @@
           "name": "Get Payment By Id",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/payments/{{paymentId}}", "host": ["{{baseUrl}}"], "path": ["payments", "{{paymentId}}"] }
+            "url": {
+              "raw": "{{baseUrl}}/payments/{{paymentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "{{paymentId}}"
+              ]
+            }
           }
         }
       ]
@@ -434,8 +955,21 @@
           "name": "File Dispute",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "url": { "raw": "{{baseUrl}}/disputes", "host": ["{{baseUrl}}"], "path": ["disputes"] },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/disputes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "disputes"
+              ]
+            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"lotId\": \"{{lotId}}\",\n  \"reason\": \"Item not as described\",\n  \"description\": \"The equipment had undisclosed damage.\"\n}"
@@ -458,11 +992,524 @@
           "name": "Resolve Dispute (Admin)",
           "request": {
             "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "url": { "raw": "{{baseUrl}}/disputes/{{disputeId}}/resolve", "host": ["{{baseUrl}}"], "path": ["disputes", "{{disputeId}}", "resolve"] },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/disputes/{{disputeId}}/resolve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "disputes",
+                "{{disputeId}}",
+                "resolve"
+              ]
+            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"status\": \"RESOLVED\",\n  \"resolutionNote\": \"Refund issued to buyer\"\n}"
+            }
+          }
+        },
+        {
+          "name": "My Disputes (Buyer/Seller)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/disputes/mine?page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "disputes",
+                "mine"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Disputes (Admin)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/disputes?status=OPEN&page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "disputes"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "OPEN"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reviews",
+      "item": [
+        {
+          "name": "Latest Reviews (Public)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/reviews/latest?limit=6",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reviews",
+                "latest"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "6"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Review (Buyer)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/reviews",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reviews"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lotId\": \"{{lotId}}\",\n  \"rating\": 5,\n  \"title\": \"Exactly as described\",\n  \"comment\": \"Smooth payment and an easy pickup. Would buy again.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "My Reviews (Buyer)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/reviews/mine?page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reviews",
+                "mine"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reviewable Lots (Buyer)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/reviews/reviewable",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reviews",
+                "reviewable"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Received Reviews (Seller)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/reviews/received?page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reviews",
+                "received"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sellers",
+      "item": [
+        {
+          "name": "Top Sellers (Public)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/sellers/top?limit=6",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "sellers",
+                "top"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "6"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Seller Profile (Public)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/sellers/{{sellerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "sellers",
+                "{{sellerId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Seller Reviews (Public)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/sellers/{{sellerId}}/reviews?page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "sellers",
+                "{{sellerId}}",
+                "reviews"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Public",
+      "item": [
+        {
+          "name": "Marketplace Stats",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "stats"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Send Contact Message",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/contact",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "contact"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Dana Whitfield\",\n  \"email\": \"dana@example.com\",\n  \"topic\": \"buying\",\n  \"message\": \"Can I inspect the forklift before the auction closes?\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Subscribe to Newsletter",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/newsletter",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "newsletter"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"dana@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "AI",
+      "item": [
+        {
+          "name": "Chat Assistant",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/ai/chat",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ai",
+                "chat"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"Find me a forklift under $20k in Texas\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Search Suggestions",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/ai/suggest?q=forklfit",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ai",
+                "suggest"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "forklfit"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Natural-language Search Intent",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/ai/search-intent",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ai",
+                "search-intent"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"q\": \"laptops under $10k in Texas closing soon\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Recommendations",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/ai/recommendations?seed={{lotId}}&limit=8",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ai",
+                "recommendations"
+              ],
+              "query": [
+                {
+                  "key": "seed",
+                  "value": "{{lotId}}"
+                },
+                {
+                  "key": "limit",
+                  "value": "8"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Trending Lots",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/ai/trending?limit=8",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ai",
+                "trending"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "8"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Listing Assistant (Seller)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/ai/listing-assist",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ai",
+                "listing-assist"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Toyota 8FGU25 forklift, 5,000 lb\",\n  \"condition\": \"Used - good\",\n  \"quantity\": 1,\n  \"location\": \"Houston, TX\",\n  \"notes\": \"LPG, 4,200 hours, side shift\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             }
           }
         }
@@ -477,12 +1524,31 @@
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/admin/users?page=1&limit=10&verificationStatus=PENDING",
-              "host": ["{{baseUrl}}"], "path": ["admin", "users"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "users"
+              ],
               "query": [
-                { "key": "page", "value": "1" },
-                { "key": "limit", "value": "10" },
-                { "key": "verificationStatus", "value": "PENDING" },
-                { "key": "role", "value": "SELLER", "disabled": true }
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "verificationStatus",
+                  "value": "PENDING"
+                },
+                {
+                  "key": "role",
+                  "value": "SELLER",
+                  "disabled": true
+                }
               ]
             }
           }
@@ -491,8 +1557,24 @@
           "name": "Verify User",
           "request": {
             "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "url": { "raw": "{{baseUrl}}/admin/users/{{targetUserId}}/verify", "host": ["{{baseUrl}}"], "path": ["admin", "users", "{{targetUserId}}", "verify"] },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/{{targetUserId}}/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "{{targetUserId}}",
+                "verify"
+              ]
+            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"verificationStatus\": \"VERIFIED\"\n}"
@@ -503,7 +1585,16 @@
           "name": "Dashboard Stats",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/admin/dashboard-stats", "host": ["{{baseUrl}}"], "path": ["admin", "dashboard-stats"] }
+            "url": {
+              "raw": "{{baseUrl}}/admin/dashboard-stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "dashboard-stats"
+              ]
+            }
           }
         },
         {
@@ -512,8 +1603,164 @@
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/admin/audit-logs?page=1&limit=10",
-              "host": ["{{baseUrl}}"], "path": ["admin", "audit-logs"],
-              "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "10" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "audit-logs"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Analytics",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/admin/analytics",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "analytics"
+              ]
+            }
+          }
+        },
+        {
+          "name": "AI Insights",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/admin/ai-insights",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "ai-insights"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Messages",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/admin/messages?status=NEW&page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "messages"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "NEW"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Message Status",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{baseUrl}}/admin/messages/{{messageId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "messages",
+                "{{messageId}}"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"READ\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "List Reviews",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/admin/reviews?rating=1&page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "reviews"
+              ],
+              "query": [
+                {
+                  "key": "rating",
+                  "value": "1"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Review",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/admin/reviews/{{reviewId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "reviews",
+                "{{reviewId}}"
+              ]
             }
           }
         }

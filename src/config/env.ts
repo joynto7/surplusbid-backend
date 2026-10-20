@@ -31,4 +31,10 @@ export const env = {
   corsOrigin: process.env.CORS_ORIGIN ?? '*',
   depositPercent: Number(process.env.DEPOSIT_PERCENT ?? 10),
   paymentDeadlineHours: Number(process.env.PAYMENT_DEADLINE_HOURS ?? 48),
+  // Optional. Without a key every AI feature still works from the built-in
+  // engines (search parsing, recommendations, insights, knowledge-base answers).
+  ai: {
+    apiKey: process.env.ANTHROPIC_API_KEY ?? '',
+    model: process.env.AI_MODEL || 'claude-opus-5-5',
+  },
 };

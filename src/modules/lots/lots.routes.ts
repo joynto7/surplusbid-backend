@@ -1,11 +1,12 @@
-import { NextFunction, Request, Response, Router } from 'express';
+import { Router } from 'express';
 import { authenticate } from '../../middleware/auth';
+import { keyRateLimit } from '../../middleware/keyRateLimit';
+import { optionalAuth } from '../../middleware/optionalAuth';
 import { requireRole } from '../../middleware/rbac';
 import { validate } from '../../middleware/validate';
 import { upload } from '../../middleware/upload';
-import { verifyAccessToken } from '../../utils/jwt';
 import { createLotSchema, updateLotSchema } from './lots.validation';
-import { browse, create, detail, myListings, publish, remove, update } from './lots.controller';
+import { browse, create, detail, myListings, publish, related, remove, update, view } from './lots.controller';
 
 const router = Router();
 
@@ -15,15 +16,14 @@ router.patch('/:id', authenticate, requireRole('SELLER'), validate(updateLotSche
 router.delete('/:id', authenticate, requireRole('SELLER'), remove);
 router.patch('/:id/publish', authenticate, requireRole('SELLER'), publish);
 
-function optionalAuth(req: Request, _res: Response, next: NextFunction) {
-  const header = req.headers.authorization;
-  if (header?.startsWith('Bearer ')) {
-    try { req.user = verifyAccessToken(header.slice(7)); } catch { /* ignore invalid token, stay anonymous */ }
-  }
-  next();
-}
-
-router.get('/', browse);
+router.get('/', optionalAuth, browse);
 router.get('/:id', optionalAuth, detail);
+router.get('/:id/related', related);
+router.post(
+  '/:id/view',
+  optionalAuth,
+  keyRateLimit('lot-view', 120, 60, 'Too many requests, slow down'),
+  view
+);
 
 export default router;
