@@ -1,0 +1,249 @@
+// SurplusBid database schema in DBML, drawn from prisma/schema.prisma.
+// Paste into https://dbdiagram.io/d to render the same ERD as surplusbid-erd.drawio.
+
+Project SurplusBid {
+  database_type: 'PostgreSQL'
+  Note: 'B2B industrial surplus auction platform. IDs are UUID v4 strings, money is integer cents (USD).'
+}
+
+Enum Role {
+  BUYER
+  SELLER
+  ADMIN
+}
+
+Enum AuthProvider {
+  LOCAL
+  GOOGLE
+}
+
+Enum VerificationStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+Enum LotStatus {
+  DRAFT
+  LIVE
+  ENDED
+  SOLD
+  UNSOLD
+  CANCELLED
+}
+
+Enum BidStatus {
+  ACTIVE
+  OUTBID
+  WINNING
+}
+
+Enum HoldStatus {
+  AUTHORIZED
+  CAPTURED
+  RELEASED
+  FAILED
+}
+
+Enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+Enum DisputeStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED
+  REJECTED
+}
+
+Enum MessageStatus {
+  NEW
+  READ
+  ARCHIVED
+}
+
+Table "User" {
+  id uuid [pk]
+  email text [unique, not null]
+  passwordHash text [note: 'null for Google accounts']
+  authProvider AuthProvider [not null, default: 'LOCAL']
+  googleId text [unique]
+  role Role [not null]
+  companyName text [not null]
+  taxId text
+  verificationStatus VerificationStatus [not null, default: 'UNVERIFIED']
+  verificationDocUrl text
+  contactName text
+  phone text
+  location text
+  bio text
+  createdAt timestamp [not null, default: `now()`]
+  updatedAt timestamp [not null]
+  deletedAt timestamp [note: 'soft delete']
+
+  Indexes {
+    email
+  }
+}
+
+Table Category {
+  id uuid [pk]
+  name text [unique, not null]
+  slug text [unique, not null]
+  description text
+  imageUrl text
+}
+
+Table Lot {
+  id uuid [pk]
+  sellerId uuid [not null, ref: > "User".id]
+  currentHighestBidderId uuid [ref: > "User".id]
+  categoryId uuid [not null, ref: > Category.id]
+  title text [not null]
+  description text [not null]
+  images "text[]" [not null]
+  condition text [not null]
+  quantity int [not null]
+  startingPriceCents int [not null]
+  reservePriceCents int [not null, note: 'visible to the seller only']
+  bidIncrementCents int [not null]
+  currentHighestBidAmountCents int
+  currentPriceCents int [not null, default: 0, note: 'COALESCE(highest bid, starting price), kept by the lot_current_price trigger']
+  startTime timestamp [not null]
+  endTime timestamp [not null]
+  status LotStatus [not null, default: 'DRAFT']
+  location text [not null, default: '']
+  specs jsonb [not null, default: '[]']
+  viewCount int [not null, default: 0]
+  createdAt timestamp [not null, default: `now()`]
+  updatedAt timestamp [not null]
+  deletedAt timestamp [note: 'soft delete']
+
+  Indexes {
+    (status, endTime)
+    (categoryId, status)
+    (status, currentPriceCents)
+  }
+}
+
+Table Bid {
+  id uuid [pk]
+  lotId uuid [not null, ref: > Lot.id]
+  buyerId uuid [not null, ref: > "User".id]
+  amountCents int [not null]
+  status BidStatus [not null, default: 'ACTIVE']
+  createdAt timestamp [not null, default: `now()`]
+
+  Indexes {
+    (lotId, createdAt)
+  }
+}
+
+Table DepositHold {
+  id uuid [pk]
+  lotId uuid [not null, ref: > Lot.id]
+  buyerId uuid [not null, ref: > "User".id]
+  stripePaymentIntentId text [unique, not null]
+  amountCents int [not null]
+  status HoldStatus [not null, default: 'AUTHORIZED']
+  createdAt timestamp [not null, default: `now()`]
+
+  Indexes {
+    (lotId, buyerId) [unique, note: 'one deposit hold per buyer per lot']
+  }
+}
+
+Table Payment {
+  id uuid [pk]
+  lotId uuid [not null, ref: > Lot.id]
+  buyerId uuid [not null, ref: > "User".id]
+  stripePaymentIntentId text [unique]
+  amountCents int [not null, note: 'winning bid minus the deposit']
+  status PaymentStatus [not null, default: 'PENDING']
+  dueAt timestamp [not null]
+  paidAt timestamp
+  createdAt timestamp [not null, default: `now()`]
+
+  Indexes {
+    (status, dueAt)
+  }
+}
+
+Table Dispute {
+  id uuid [pk]
+  lotId uuid [not null, ref: > Lot.id]
+  raisedById uuid [not null, ref: > "User".id]
+  resolvedById uuid [ref: > "User".id]
+  reason text [not null]
+  description text [not null]
+  status DisputeStatus [not null, default: 'OPEN']
+  resolutionNote text
+  createdAt timestamp [not null, default: `now()`]
+  resolvedAt timestamp
+}
+
+Table Review {
+  id uuid [pk]
+  lotId uuid [not null, ref: > Lot.id]
+  sellerId uuid [not null, ref: > "User".id]
+  authorId uuid [not null, ref: > "User".id]
+  rating int [not null, note: '1 to 5']
+  title text [not null]
+  comment text [not null]
+  createdAt timestamp [not null, default: `now()`]
+
+  Indexes {
+    (lotId, authorId) [unique, note: 'one review per buyer per lot']
+    (sellerId, createdAt)
+  }
+}
+
+Table LotView {
+  id uuid [pk]
+  lotId uuid [not null, ref: > Lot.id]
+  userId uuid [ref: > "User".id]
+  createdAt timestamp [not null, default: `now()`]
+
+  Indexes {
+    (lotId, createdAt)
+    createdAt
+  }
+}
+
+Table AuditLog {
+  id uuid [pk]
+  actorId uuid [ref: > "User".id, note: 'null for system jobs']
+  action text [not null]
+  entityType text [not null]
+  entityId text [not null]
+  metadata jsonb
+  createdAt timestamp [not null, default: `now()`]
+
+  Indexes {
+    (entityType, entityId)
+  }
+}
+
+Table ContactMessage {
+  id uuid [pk]
+  name text [not null]
+  email text [not null]
+  topic text [not null]
+  message text [not null]
+  status MessageStatus [not null, default: 'NEW']
+  createdAt timestamp [not null, default: `now()`]
+
+  Indexes {
+    (status, createdAt)
+  }
+}
+
+Table NewsletterSubscriber {
+  id uuid [pk]
+  email text [unique, not null]
+  createdAt timestamp [not null, default: `now()`]
+}
